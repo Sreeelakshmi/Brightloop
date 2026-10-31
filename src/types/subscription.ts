@@ -6,7 +6,7 @@
  * stay in sync with server-side validation.
  */
 
-import type { Subscription } from "@/lib/validations/subscription";
+import type { BillingPeriod, Subscription, SubscriptionLine } from "@/lib/validations/subscription";
 
 export type {
   BillingPeriod,
@@ -17,9 +17,16 @@ export type {
   ProductVariant,
   QuotationTemplate,
   Subscription,
+  SubscriptionCreate,
   SubscriptionLine,
   SubscriptionStatus,
 } from "@/lib/validations/subscription";
+
+export interface BillableSubscriptionLine extends SubscriptionLine {
+  id?: string;
+  lineId?: string;
+  productName?: string;
+}
 
 /**
  * Subscription as consumed by the recurring billing engine.
@@ -29,8 +36,17 @@ export type {
  * are the aggregates the engine invoices for the current cycle.
  */
 export interface BillableSubscription extends Subscription {
+  id: string;
+  subscriptionId?: string;
   status: "active";
   nextBillingDate: string;
+  periodStart: string;
+  periodEnd: string;
+  planName?: string;
+  billingPeriod?: BillingPeriod;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  lines: BillableSubscriptionLine[];
   /** Sum of the line amounts before tax. */
   subtotal: number;
   /** Sum of the tax amounts for the lines. */
