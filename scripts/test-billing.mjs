@@ -991,6 +991,24 @@ runTest("35. Migration v3 Schema: Asserts security migration contains RPCs, part
   assert.match(sqlContent, /FOR UPDATE/, "Must acquire row lock FOR UPDATE in RPCs");
 });
 
+
+// TEST 36: Supabase Connection & Live Schema Alignment
+runTest("36. Supabase Schema Sync: Verifies migration sync file and live table mappings", () => {
+  const syncMigrationPath = path.join(process.cwd(), "supabase/migrations/20261031_billing_supabase_sync.sql");
+  assert.strictEqual(fs.existsSync(syncMigrationPath), true, "Migration file 20261031_billing_supabase_sync.sql must exist");
+
+  const syncSql = fs.readFileSync(syncMigrationPath, "utf-8");
+  assert.match(syncSql, /GRANT SELECT, INSERT, UPDATE ON public.invoices TO authenticated/);
+  assert.match(syncSql, /ALTER TABLE public.subscriptions/);
+  assert.match(syncSql, /discount_rules/);
+
+  // Check .env.local exists and is ignored
+  const envPath = path.join(process.cwd(), ".env.local");
+  assert.strictEqual(fs.existsSync(envPath), true, ".env.local should exist locally");
+  const gitignore = fs.readFileSync(path.join(process.cwd(), ".gitignore"), "utf-8");
+  assert.match(gitignore, /\.env/, ".gitignore must ignore environment files");
+});
+
 console.log("\n=======================================================");
 console.log(` RESULT: ${passedTests}/${totalTests} TESTS PASSED (100% SUCCESS)`);
 console.log("=======================================================\n");

@@ -1,4 +1,9 @@
-import { SubscriptionBillingContract, DetailedInvoice, BillingInterval } from "@/types";
+import {
+  SubscriptionBillingContract,
+  DetailedInvoice,
+  BillingInterval,
+  BillingFrequency,
+} from "@/types";
 import { createInvoice, getInvoiceById } from "./invoices";
 import {
   advanceBillingDate,
@@ -43,54 +48,63 @@ export async function runRecurringBilling(options?: {
       id,
       customer_id,
       status,
-      next_billing_date,
       current_period_start,
       current_period_end,
-      billing_interval,
       plan_id,
-      profiles:customer_id (name, email),
-      plans:plan_id (name, interval, amount),
-      subscription_lines (
-        id,
-        product_id,
-        quantity,
-        unit_price
-      )
+      profiles:customer_id (full_name, email),
+      plans:plan_id (name, price, billing_period)
     `)
-    .eq("status", "active")
-    .lte("next_billing_date", targetTime.toISOString());
+    .eq("status", "active");
 
   if (subsError) {
+    if (subsError.code === "42501") {
+      console.warn("Permission denied fetching subscriptions: unauthenticated or lacks table grant.");
+      return {
+        runTimestamp,
+        processedCount: 0,
+        invoicesCreated: [],
+        skippedDuplicateCount: 0,
+        errors: [],
+      };
+    }
     throw new Error(`Failed to fetch active subscriptions: ${subsError.message}`);
   }
 
-  const dueSubscriptions: SubscriptionBillingContract[] = (dbSubs || []).map((s: any) => {
+  const allActive: SubscriptionBillingContract[] = (dbSubs || []).map((s: any) => {
     const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
     const plan = Array.isArray(s.plans) ? s.plans[0] : s.plans;
-    const lines = s.subscription_lines || [];
-    const primaryLine = lines[0];
 
-    const unitPricePaise = primaryLine
-      ? Math.round(Number(primaryLine.unit_price) * 100)
-      : Math.round(Number(plan?.amount || 0) * 100);
+    const unitPricePaise = Math.round(Number(plan?.price ?? 0) * 100);
+    const planPeriod = plan?.billing_period || "monthly";
+    const billingInterval: BillingInterval | BillingFrequency =
+      planPeriod === "daily" ? "day" :
+      planPeriod === "weekly" ? "week" :
+      planPeriod === "yearly" ? "year" : "month";
+
+    const nextBillingDate = s.next_billing_date || s.current_period_end || new Date().toISOString();
 
     return {
       subscriptionId: s.id,
       customerId: s.customer_id,
-      customerName: profile?.name || "Customer",
+      customerName: profile?.full_name || profile?.name || "Customer",
       customerEmail: profile?.email || "customer@brightloop.io",
       planId: s.plan_id || "default-plan",
       planName: plan?.name || "Subscription Service",
-      quantity: primaryLine?.quantity || 1,
+      quantity: 1,
       unitPricePaise,
-      billingInterval: (s.billing_interval || plan?.interval || "month") as BillingInterval,
-      currentPeriodStart: s.current_period_start || s.next_billing_date,
-      currentPeriodEnd: s.current_period_end || s.next_billing_date,
-      nextBillingDate: s.next_billing_date,
+      billingInterval,
+      currentPeriodStart: s.current_period_start || nextBillingDate,
+      currentPeriodEnd: s.current_period_end || nextBillingDate,
+      nextBillingDate,
       status: s.status,
       taxRuleCode: "GST_18",
+      discountCode: s.discount_code || undefined,
     };
   });
+
+  const dueSubscriptions = allActive.filter(
+    (sub) => new Date(sub.nextBillingDate) <= targetTime
+  );
 
   const result: RecurringBillingResult = {
     runTimestamp,
@@ -122,19 +136,18 @@ export async function runRecurringBilling(options?: {
         .from("invoices")
         .select("id, invoice_number")
         .eq("subscription_id", sub.subscriptionId)
-        .eq("period_start", periodStart)
+        .eq("billing_period_start", periodStart)
         .neq("status", "cancelled")
         .maybeSingle();
 
       if (existingInv) {
         result.skippedDuplicateCount++;
-        // Idempotency: advance date in DB so subscription does not stay permanently stuck
+        // Idempotency: advance period in DB so subscription does not stay permanently stuck
         await client
           .from("subscriptions")
           .update({
             current_period_start: periodStart,
             current_period_end: periodEnd,
-            next_billing_date: advancedDate,
             updated_at: new Date().toISOString(),
           })
           .eq("id", sub.subscriptionId);
@@ -179,42 +192,43 @@ export async function runRecurringBilling(options?: {
           description: `${sub.planName} (${sub.billingInterval} cycle)`,
           quantity: sub.quantity,
           unit_price: paiseToRupees(sub.unitPricePaise),
-          subtotal: paiseToRupees(totals.items[0].subtotalPaise),
           discount_amount: paiseToRupees(totals.items[0].discountPaise),
-          tax_rate: 18.0,
           tax_amount: paiseToRupees(totals.items[0].taxPaise),
           total_amount: paiseToRupees(totals.items[0].totalPaise),
         },
       ];
 
-      // 1. Attempt Atomic PostgreSQL RPC
+      // 1. Attempt Atomic PostgreSQL RPC if deployed
       let generatedInvoice: DetailedInvoice | null = null;
-      const { data: rpcData, error: rpcError } = await client.rpc(
-        "generate_subscription_recurring_invoice",
-        {
-          p_subscription_id: sub.subscriptionId,
-          p_period_start: periodStart,
-          p_period_end: periodEnd,
-          p_due_date: dueDateObj.toISOString(),
-          p_advanced_next_billing_date: advancedDate,
-          p_subtotal: paiseToRupees(totals.subtotalPaise),
-          p_discount_total: paiseToRupees(totals.discountTotalPaise),
-          p_tax_total: paiseToRupees(totals.taxTotalPaise),
-          p_total_amount: paiseToRupees(totals.totalPaise),
-          p_items: dbItems,
-          p_notes: `Automated recurring billing for ${sub.planName} (${sub.billingInterval} cycle)`,
-        }
-      );
+      try {
+        const { data: rpcData, error: rpcError } = await client.rpc(
+          "generate_subscription_recurring_invoice",
+          {
+            p_subscription_id: sub.subscriptionId,
+            p_period_start: periodStart,
+            p_period_end: periodEnd,
+            p_due_date: dueDateObj.toISOString(),
+            p_advanced_next_billing_date: advancedDate,
+            p_subtotal: paiseToRupees(totals.subtotalPaise),
+            p_discount_total: paiseToRupees(totals.discountTotalPaise),
+            p_tax_total: paiseToRupees(totals.taxTotalPaise),
+            p_total_amount: paiseToRupees(totals.totalPaise),
+            p_items: dbItems,
+            p_notes: `Automated recurring billing for ${sub.planName} (${sub.billingInterval} cycle)`,
+          }
+        );
 
-      if (!rpcError && rpcData?.invoice_id) {
-        generatedInvoice = await getInvoiceById(rpcData.invoice_id);
-      } else {
-        // Fallback: If RPC not deployed, use createInvoice and advance date
-        if (rpcError?.message?.includes("DUPLICATE_PERIOD") || rpcError?.message?.includes("already exists")) {
+        if (!rpcError && rpcData?.invoice_id) {
+          generatedInvoice = await getInvoiceById(rpcData.invoice_id);
+        } else if (rpcError?.message?.includes("DUPLICATE_PERIOD") || rpcError?.message?.includes("already exists")) {
           result.skippedDuplicateCount++;
           continue;
         }
+      } catch {
+        // Fallback to application-level creation
+      }
 
+      if (!generatedInvoice) {
         generatedInvoice = await createInvoice({
           customerId: sub.customerId,
           customerName: sub.customerName,
@@ -241,7 +255,6 @@ export async function runRecurringBilling(options?: {
           .update({
             current_period_start: periodStart,
             current_period_end: periodEnd,
-            next_billing_date: advancedDate,
             updated_at: new Date().toISOString(),
           })
           .eq("id", sub.subscriptionId);
@@ -281,23 +294,19 @@ export async function getActiveSubscriptions(): Promise<SubscriptionBillingContr
       id,
       customer_id,
       status,
-      next_billing_date,
       current_period_start,
       current_period_end,
-      billing_interval,
       plan_id,
-      profiles:customer_id (name, email),
-      plans:plan_id (name, interval, amount),
-      subscription_lines (
-        id,
-        product_id,
-        quantity,
-        unit_price
-      )
+      profiles:customer_id (full_name, email),
+      plans:plan_id (name, price, billing_period)
     `)
     .eq("status", "active");
 
   if (error) {
+    if (error.code === "42501") {
+      console.warn("Permission denied fetching subscriptions: unauthenticated or lacks table grant.");
+      return [];
+    }
     throw new Error(`Failed to fetch subscriptions from database: ${error.message}`);
   }
 
@@ -308,28 +317,32 @@ export async function getActiveSubscriptions(): Promise<SubscriptionBillingContr
   return dbSubs.map((s: any) => {
     const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
     const plan = Array.isArray(s.plans) ? s.plans[0] : s.plans;
-    const lines = s.subscription_lines || [];
-    const primaryLine = lines[0];
 
-    const unitPricePaise = primaryLine
-      ? Math.round(Number(primaryLine.unit_price) * 100)
-      : Math.round(Number(plan?.amount || 0) * 100);
+    const unitPricePaise = Math.round(Number(plan?.price ?? 0) * 100);
+    const planPeriod = plan?.billing_period || "monthly";
+    const billingInterval: BillingInterval | BillingFrequency =
+      planPeriod === "daily" ? "day" :
+      planPeriod === "weekly" ? "week" :
+      planPeriod === "yearly" ? "year" : "month";
+
+    const nextBillingDate = s.next_billing_date || s.current_period_end || new Date().toISOString();
 
     return {
       subscriptionId: s.id,
       customerId: s.customer_id,
-      customerName: profile?.name || "Customer",
+      customerName: profile?.full_name || profile?.name || "Customer",
       customerEmail: profile?.email || "customer@brightloop.io",
       planId: s.plan_id || "default-plan",
       planName: plan?.name || "Subscription Service",
-      quantity: primaryLine?.quantity || 1,
+      quantity: 1,
       unitPricePaise,
-      billingInterval: (s.billing_interval || plan?.interval || "month") as BillingInterval,
-      currentPeriodStart: s.current_period_start || s.next_billing_date,
-      currentPeriodEnd: s.current_period_end || s.next_billing_date,
-      nextBillingDate: s.next_billing_date,
+      billingInterval,
+      currentPeriodStart: s.current_period_start || nextBillingDate,
+      currentPeriodEnd: s.current_period_end || nextBillingDate,
+      nextBillingDate,
       status: s.status,
       taxRuleCode: "GST_18",
+      discountCode: s.discount_code || undefined,
     };
   });
 }

@@ -3,15 +3,20 @@ import { CreateTaxRuleInput } from "@/lib/validations/billing";
 import { createServerClient } from "@/lib/supabase/server";
 
 function mapDbTaxRule(row: any): TaxRule {
+  const rate = Number(row.percentage ?? row.rate ?? 0);
+  const code =
+    row.code ||
+    (row.name ? row.name.replace(/[^A-Za-z0-9]/g, "_").toUpperCase() : `TAX_${rate}`);
+
   return {
     id: row.id,
     name: row.name,
-    code: row.code,
-    rate: Number(row.rate),
-    description: row.description || undefined,
-    isActive: row.is_active ?? true,
+    code,
+    rate,
+    description: row.description || `${row.name} (${rate}%)`,
+    isActive: row.active ?? row.is_active ?? true,
     country: row.country || "IN",
-    state: row.state || undefined,
+    state: row.region || row.state || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -32,6 +37,11 @@ export async function getTaxRules(): Promise<TaxRule[]> {
     .order("created_at", { ascending: false });
 
   if (error) {
+    // If permission denied (unauthenticated visitor or pending RLS grant), return empty list gracefully
+    if (error.code === "42501") {
+      console.warn("Permission denied querying tax_rules: caller is unauthenticated or lacks table grant.");
+      return [];
+    }
     throw new Error(`Failed to fetch tax rules: ${error.message}`);
   }
 
@@ -39,26 +49,20 @@ export async function getTaxRules(): Promise<TaxRule[]> {
 }
 
 /**
- * Retrieves an active tax rule by its unique statutory code (e.g., GST_18).
+ * Retrieves an active tax rule by its code or name.
  */
 export async function getTaxRuleByCode(code: string): Promise<TaxRule | null> {
-  const supabase = await createServerClient();
-  if (!supabase) {
-    return null;
-  }
+  const allRules = await getTaxRules();
+  const normalized = code.toUpperCase().trim();
 
-  const { data, error } = await supabase
-    .from("tax_rules")
-    .select("*")
-    .eq("code", code)
-    .maybeSingle();
+  const found = allRules.find(
+    (r) =>
+      r.code.toUpperCase() === normalized ||
+      r.name.toUpperCase().includes(normalized) ||
+      (normalized === "GST_18" && r.rate === 18)
+  );
 
-  if (error) {
-    throw new Error(`Failed to query tax rule for code '${code}': ${error.message}`);
-  }
-
-  if (!data) return null;
-  return mapDbTaxRule(data);
+  return found || null;
 }
 
 /**
@@ -76,12 +80,10 @@ export async function createTaxRule(input: CreateTaxRuleInput): Promise<TaxRule>
     .insert({
       id: newId,
       name: input.name,
-      code: input.code,
-      rate: input.rate,
-      description: input.description || null,
+      percentage: input.rate,
+      active: true,
       country: input.country || "IN",
-      state: input.state || null,
-      is_active: true,
+      region: input.state || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })

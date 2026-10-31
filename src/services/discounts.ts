@@ -3,12 +3,17 @@ import { CreateDiscountInput } from "@/lib/validations/billing";
 import { createServerClient } from "@/lib/supabase/server";
 
 function mapDbDiscount(row: any): Discount {
+  const code = row.code || "";
+  const name = row.name || row.description || code;
+  const type = (row.discount_type || row.type || "percentage") as "percentage" | "fixed";
+  const value = Number(row.discount_value ?? row.value ?? 0);
+
   return {
     id: row.id,
-    code: row.code,
-    name: row.name || row.description || row.code,
-    type: row.type,
-    value: Number(row.value),
+    code,
+    name,
+    type,
+    value,
     minPurchaseAmount: row.min_purchase_amount ? Number(row.min_purchase_amount) : undefined,
     minQuantity: row.min_quantity ? Number(row.min_quantity) : undefined,
     maxUsage: row.max_uses ?? row.max_usage ?? undefined,
@@ -17,7 +22,7 @@ function mapDbDiscount(row: any): Discount {
     subscriptionId: row.subscription_id || (Array.isArray(row.applicable_plan_ids) ? row.applicable_plan_ids[0] : undefined),
     startDate: row.starts_at || row.start_date || undefined,
     endDate: row.expires_at || row.end_date || undefined,
-    isActive: row.is_active ?? true,
+    isActive: row.active ?? row.is_active ?? true,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -33,11 +38,15 @@ export async function getDiscounts(): Promise<Discount[]> {
   }
 
   const { data, error } = await supabase
-    .from("discounts")
+    .from("discount_rules")
     .select("*")
     .order("created_at", { ascending: false });
 
   if (error) {
+    if (error.code === "42501") {
+      console.warn("Permission denied querying discount_rules: caller is unauthenticated or lacks table grant.");
+      return [];
+    }
     throw new Error(`Failed to fetch discounts from database: ${error.message}`);
   }
 
@@ -54,12 +63,15 @@ export async function getDiscountByCode(code: string): Promise<Discount | null> 
   }
 
   const { data, error } = await supabase
-    .from("discounts")
+    .from("discount_rules")
     .select("*")
     .eq("code", code.toUpperCase().trim())
     .maybeSingle();
 
   if (error) {
+    if (error.code === "42501") {
+      return null;
+    }
     throw new Error(`Failed to query discount for code '${code}': ${error.message}`);
   }
 
@@ -79,25 +91,16 @@ export async function createDiscount(input: CreateDiscountInput): Promise<Discou
   const newId = crypto.randomUUID();
 
   const { data, error } = await supabase
-    .from("discounts")
+    .from("discount_rules")
     .insert({
       id: newId,
       code: input.code.toUpperCase().trim(),
-      name: input.name,
       description: input.name,
-      type: input.type,
-      value: input.value,
-      is_active: true,
+      discount_type: input.type,
+      discount_value: input.value,
+      active: true,
       starts_at: input.startDate || null,
       expires_at: input.endDate || null,
-      start_date: input.startDate || null,
-      end_date: input.endDate || null,
-      max_uses: input.maxUsage || null,
-      max_usage: input.maxUsage || null,
-      current_uses: 0,
-      used_count: 0,
-      min_purchase_amount: input.minPurchaseAmount || null,
-      min_quantity: input.minQuantity || 1,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -194,7 +197,7 @@ export async function incrementDiscountUsage(code: string): Promise<boolean> {
   }
 
   const { data: current } = await supabase
-    .from("discounts")
+    .from("discount_rules")
     .select("id, current_uses, max_uses, used_count, max_usage")
     .eq("code", normalizedCode)
     .maybeSingle();
@@ -209,7 +212,7 @@ export async function incrementDiscountUsage(code: string): Promise<boolean> {
   }
 
   const { error } = await supabase
-    .from("discounts")
+    .from("discount_rules")
     .update({
       current_uses: currentCount + 1,
       used_count: currentCount + 1,

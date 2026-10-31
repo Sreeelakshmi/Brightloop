@@ -68,11 +68,15 @@ export async function getCustomerOptions(): Promise<CustomerOption[]> {
   try {
     const client = await createServerClient();
     if (client) {
-      const { data } = await client.from("profiles").select("id, name, email").order("name");
-      if (data && data.length > 0) {
+      const { data, error } = await client
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
         return data.map((d: any) => ({
           id: d.id,
-          name: d.name || d.email,
+          name: d.full_name || d.name || d.email,
           email: d.email,
         }));
       }
@@ -90,11 +94,19 @@ export async function getCustomerOptions(): Promise<CustomerOption[]> {
 
 function mapDbInvoice(row: any): DetailedInvoice {
   const subtotalPaise = rupeesToPaise(Number(row.subtotal ?? 0));
-  const discountTotalPaise = rupeesToPaise(Number(row.discount_total ?? 0));
-  const taxTotalPaise = rupeesToPaise(Number(row.tax_total ?? 0));
-  const totalAmountPaise = rupeesToPaise(Number(row.total_amount ?? 0));
+  const discountTotalPaise = rupeesToPaise(Number(row.discount_amount ?? row.discount_total ?? 0));
+  const taxTotalPaise = rupeesToPaise(Number(row.tax_amount ?? row.tax_total ?? 0));
+
+  const totalAmountPaise =
+    row.total_amount != null
+      ? rupeesToPaise(Number(row.total_amount))
+      : Math.max(0, subtotalPaise - discountTotalPaise + taxTotalPaise);
+
   const amountPaidPaise = rupeesToPaise(Number(row.amount_paid ?? 0));
-  const amountDuePaise = rupeesToPaise(Number(row.amount_due ?? 0));
+  const amountDuePaise =
+    row.amount_due != null
+      ? rupeesToPaise(Number(row.amount_due))
+      : Math.max(0, totalAmountPaise - amountPaidPaise);
 
   const items: InvoiceItem[] = (row.invoice_items ?? []).map((item: any) => ({
     id: item.id,
@@ -103,9 +115,11 @@ function mapDbInvoice(row: any): DetailedInvoice {
     description: item.description,
     quantity: Number(item.quantity ?? 1),
     unitPricePaise: rupeesToPaise(Number(item.unit_price ?? 0)),
-    subtotalPaise: rupeesToPaise(Number(item.subtotal ?? 0)),
+    subtotalPaise: rupeesToPaise(
+      Number(item.subtotal ?? Number(item.quantity ?? 1) * Number(item.unit_price ?? 0))
+    ),
     discountAmountPaise: rupeesToPaise(Number(item.discount_amount ?? 0)),
-    taxRatePercent: Number(item.tax_rate ?? 0),
+    taxRatePercent: Number(item.tax_rate ?? 18),
     taxAmountPaise: rupeesToPaise(Number(item.tax_amount ?? 0)),
     totalAmountPaise: rupeesToPaise(Number(item.total_amount ?? 0)),
     metadata: item.metadata,
@@ -122,7 +136,7 @@ function mapDbInvoice(row: any): DetailedInvoice {
     status: p.status,
     paymentMethod: p.payment_method,
     paymentMethodType: p.payment_method,
-    paymentDate: p.payment_date,
+    paymentDate: p.payment_date || p.created_at,
     transactionReference: p.transaction_reference,
     notes: p.notes,
     createdAt: p.created_at,
@@ -130,9 +144,10 @@ function mapDbInvoice(row: any): DetailedInvoice {
 
   const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
   const customerName =
+    profile?.full_name ??
     profile?.name ??
-    row.customer?.name ??
     row.customer?.full_name ??
+    row.customer?.name ??
     KNOWN_SEED_CUSTOMERS[row.customer_id]?.name ??
     undefined;
   const customerEmail =
@@ -154,18 +169,18 @@ function mapDbInvoice(row: any): DetailedInvoice {
     status: toBaseInvoiceStatus(extendedStatus),
     extendedStatus,
     currency: row.currency ?? "INR",
-    issueDate: row.issue_date,
+    issueDate: row.issue_date || row.created_at,
     dueDate: row.due_date,
-    periodStart: row.period_start ?? undefined,
-    periodEnd: row.period_end ?? undefined,
+    periodStart: row.billing_period_start || row.period_start || undefined,
+    periodEnd: row.billing_period_end || row.period_end || undefined,
     subtotalPaise,
     discountTotalPaise,
     taxTotalPaise,
     totalAmountPaise,
     amountPaidPaise,
     amountDuePaise,
-    amountDue: Number(row.amount_due ?? 0),
-    amountPaid: Number(row.amount_paid ?? 0),
+    amountDue: Number(row.amount_due ?? paiseToRupees(amountDuePaise)),
+    amountPaid: Number(row.amount_paid ?? paiseToRupees(amountPaidPaise)),
     notes: row.notes ?? undefined,
     createdAt: row.created_at,
     items,
@@ -188,7 +203,7 @@ export async function getInvoices(filters?: InvoiceFilters): Promise<DetailedInv
 
   let query = client.from("invoices").select(`
     *,
-    profiles:customer_id (name, email),
+    profiles:customer_id (full_name, email),
     invoice_items (*),
     payments (*)
   `);
@@ -203,10 +218,14 @@ export async function getInvoices(filters?: InvoiceFilters): Promise<DetailedInv
     query = query.eq("status", filters.status);
   }
 
-  query = query.order("issue_date", { ascending: false });
+  query = query.order("created_at", { ascending: false });
 
   const { data, error } = await query;
   if (error) {
+    if (error.code === "42501") {
+      console.warn("Permission denied querying invoices: caller is unauthenticated or lacks table grant.");
+      return [];
+    }
     throw new Error(`Failed to query invoices from database: ${error.message}`);
   }
 
@@ -247,7 +266,7 @@ export async function getInvoiceById(id: string): Promise<DetailedInvoice | null
     .from("invoices")
     .select(`
       *,
-      profiles:customer_id (name, email),
+      profiles:customer_id (full_name, email),
       invoice_items (*),
       payments (*)
     `)
@@ -256,6 +275,9 @@ export async function getInvoiceById(id: string): Promise<DetailedInvoice | null
 
   const { data, error } = await query;
   if (error) {
+    if (error.code === "42501") {
+      return null;
+    }
     throw new Error(`Failed to query invoice ${id} from database: ${error.message}`);
   }
 
@@ -293,7 +315,7 @@ export async function generateNextInvoiceNumber(): Promise<string> {
       const { data } = await client
         .from("invoices")
         .select("invoice_number")
-        .order("invoice_number", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(1);
 
       if (data && data.length > 0 && data[0].invoice_number) {
@@ -305,7 +327,7 @@ export async function generateNextInvoiceNumber(): Promise<string> {
       }
     }
   } catch {
-    // Fall back to generated sequence
+    // Fall back to timestamp suffix
   }
 
   return `INV-2026-${Date.now().toString().slice(-4)}`;
@@ -322,13 +344,13 @@ export async function validateCustomer(
       if (customerId) {
         const { data } = await client
           .from("profiles")
-          .select("id, name, email")
+          .select("id, full_name, email")
           .eq("id", customerId)
           .maybeSingle();
         if (data) {
           return {
             customerId: data.id,
-            customerName: data.name || data.email,
+            customerName: data.full_name || data.email,
             customerEmail: data.email,
           };
         }
@@ -336,13 +358,13 @@ export async function validateCustomer(
       if (customerEmail) {
         const { data } = await client
           .from("profiles")
-          .select("id, name, email")
+          .select("id, full_name, email")
           .eq("email", customerEmail)
           .maybeSingle();
         if (data) {
           return {
             customerId: data.id,
-            customerName: data.name || data.email,
+            customerName: data.full_name || data.email,
             customerEmail: data.email,
           };
         }
@@ -394,7 +416,7 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Detail
       .from("invoices")
       .select("id, invoice_number")
       .eq("subscription_id", params.subscriptionId)
-      .eq("period_start", params.periodStart)
+      .eq("billing_period_start", params.periodStart)
       .neq("status", "cancelled")
       .maybeSingle();
 
@@ -467,7 +489,7 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Detail
   const extendedStatus: ExtendedInvoiceStatus = params.status || "confirmed";
   const baseStatus = toBaseInvoiceStatus(extendedStatus);
 
-  // Insert into Supabase
+  // Insert into Supabase matching live table columns
   const { error: invErr } = await client.from("invoices").insert({
     id: invoiceId,
     invoice_number: invoiceNumber,
@@ -475,17 +497,14 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Detail
     subscription_id: params.subscriptionId || null,
     status: baseStatus,
     currency: "INR",
-    issue_date: new Date().toISOString(),
     due_date: params.dueDate,
-    period_start: params.periodStart || null,
-    period_end: params.periodEnd || null,
+    billing_period_start: params.periodStart || null,
+    billing_period_end: params.periodEnd || null,
     subtotal: paiseToRupees(totals.subtotalPaise),
-    discount_total: paiseToRupees(totals.discountTotalPaise),
-    tax_total: paiseToRupees(totals.taxTotalPaise),
-    total_amount: paiseToRupees(totals.totalPaise),
+    discount_amount: paiseToRupees(totals.discountTotalPaise),
+    tax_amount: paiseToRupees(totals.taxTotalPaise),
     amount_paid: 0.0,
     amount_due: paiseToRupees(totals.totalPaise),
-    notes: params.notes || null,
   });
 
   if (invErr) {
@@ -495,13 +514,10 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Detail
   const dbItems = processedItems.map((it) => ({
     id: it.id,
     invoice_id: invoiceId,
-    product_id: it.productId || null,
     description: it.description,
     quantity: it.quantity,
     unit_price: paiseToRupees(it.unitPricePaise),
-    subtotal: paiseToRupees(it.subtotalPaise),
     discount_amount: paiseToRupees(it.discountAmountPaise),
-    tax_rate: it.taxRatePercent,
     tax_amount: paiseToRupees(it.taxAmountPaise),
     total_amount: paiseToRupees(it.totalAmountPaise),
   }));

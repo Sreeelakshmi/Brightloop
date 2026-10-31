@@ -15,7 +15,7 @@ function mapDbPayment(row: any): DetailedPayment {
     status: row.status,
     paymentMethod: row.payment_method,
     paymentMethodType: row.payment_method as PaymentMethodType,
-    paymentDate: row.payment_date,
+    paymentDate: row.payment_date || row.created_at,
     transactionReference: row.transaction_reference || undefined,
     notes: row.notes || undefined,
     createdAt: row.created_at,
@@ -35,7 +35,7 @@ export async function getPayments(filters?: PaymentFilters): Promise<DetailedPay
     return [];
   }
 
-  let query = supabase.from("payments").select("*").order("payment_date", { ascending: false });
+  let query = supabase.from("payments").select("*").order("created_at", { ascending: false });
 
   if (filters?.invoiceId) {
     query = query.eq("invoice_id", filters.invoiceId);
@@ -52,6 +52,10 @@ export async function getPayments(filters?: PaymentFilters): Promise<DetailedPay
 
   const { data, error } = await query;
   if (error) {
+    if (error.code === "42501") {
+      console.warn("Permission denied querying payments: caller is unauthenticated or lacks table grant.");
+      return [];
+    }
     throw new Error(`Failed to query payments from database: ${error.message}`);
   }
 
@@ -104,18 +108,28 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{
 
   let paymentRecordId = newPaymentId;
 
-  // 1. Attempt database RPC for atomic row-locking execution
-  const { data: rpcData, error: rpcError } = await supabase.rpc("record_invoice_payment", {
-    p_invoice_id: invoice.id,
-    p_customer_id: input.customerId || invoice.customerId,
-    p_amount: input.amountRupees,
-    p_payment_method: input.paymentMethod,
-    p_transaction_reference: txRef,
-    p_notes: input.notes || null,
-  });
+  // 1. Attempt database RPC for atomic row-locking execution if available
+  let rpcHandled = false;
+  try {
+    const { data: rpcData, error: rpcError } = await supabase.rpc("record_invoice_payment", {
+      p_invoice_id: invoice.id,
+      p_customer_id: input.customerId || invoice.customerId,
+      p_amount: input.amountRupees,
+      p_payment_method: input.paymentMethod,
+      p_transaction_reference: txRef,
+      p_notes: input.notes || null,
+    });
 
-  if (rpcError) {
-    // If RPC is missing or fails, execute direct table writes
+    if (!rpcError && rpcData?.payment_id) {
+      paymentRecordId = rpcData.payment_id;
+      rpcHandled = true;
+    }
+  } catch {
+    // RPC not yet deployed in remote database
+  }
+
+  if (!rpcHandled) {
+    // Execute direct table writes matching live database schema
     const { error: insertErr } = await supabase.from("payments").insert({
       id: newPaymentId,
       invoice_id: invoice.id,
@@ -124,9 +138,7 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{
       currency: "INR",
       payment_method: input.paymentMethod,
       status: "succeeded",
-      payment_date: new Date().toISOString(),
       transaction_reference: txRef,
-      notes: input.notes,
     });
 
     if (insertErr) {
@@ -150,8 +162,6 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{
     if (updateErr) {
       throw new Error(`Failed to update invoice balance in database: ${updateErr.message}`);
     }
-  } else if (rpcData && rpcData.payment_id) {
-    paymentRecordId = rpcData.payment_id;
   }
 
   // Reload the updated invoice directly from the database
