@@ -12,6 +12,7 @@ import {
   LineItemCalculationInput,
 } from "@/lib/billing/math";
 import { evaluateDiscountEligibility, getDiscountByCode, incrementDiscountUsage } from "./discounts";
+import { createServerClient } from "@/lib/supabase/server";
 
 export function toBaseInvoiceStatus(extended: ExtendedInvoiceStatus): InvoiceStatus {
   switch (extended) {
@@ -42,6 +43,131 @@ export function resolveInvoiceStatus(
     return "overdue";
   }
   return status;
+}
+
+export const KNOWN_SEED_CUSTOMERS: Record<string, { name: string; email: string }> = {
+  "a0000000-0000-4000-8000-000000000001": { name: "Astra Tech Solutions", email: "billing@astratech.in" },
+  "a0000000-0000-4000-8000-000000000002": { name: "Nexora Analytics", email: "finance@nexora.io" },
+  "a0000000-0000-4000-8000-000000000003": { name: "Kite Fintech Labs", email: "accounts@kitefintech.com" },
+  "a0000000-0000-4000-8000-000000000004": { name: "CloudScale Systems", email: "ops@cloudscale.net" },
+  "a0000000-0000-4000-8000-000000000005": { name: "Zenith Retail Tech", email: "pay@zenithretail.in" },
+  "a0000000-0000-4000-8000-000000000006": { name: "Bytecraft Software", email: "contact@bytecraft.dev" },
+  "a0000000-0000-4000-8000-000000000007": { name: "Orbit Logistics", email: "accounts@orbitlogistics.co" },
+  "a0000000-0000-4000-8000-000000000008": { name: "Quantum AI Dynamics", email: "billing@quantumai.dev" },
+  "a0000000-0000-4000-8000-000000000009": { name: "Hyperion Cloud", email: "finance@hyperioncloud.io" },
+  "a0000000-0000-4000-8000-000000000010": { name: "Solaria Energy", email: "accounts@solaria.energy" },
+};
+
+export interface CustomerOption {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export async function getCustomerOptions(): Promise<CustomerOption[]> {
+  try {
+    const client = await createServerClient();
+    if (client) {
+      const { data } = await client.from("profiles").select("id, name, email").order("name");
+      if (data && data.length > 0) {
+        return data.map((d: any) => ({
+          id: d.id,
+          name: d.name || d.email,
+          email: d.email,
+        }));
+      }
+    }
+  } catch {
+    // Fall back to seed customers
+  }
+
+  return Object.entries(KNOWN_SEED_CUSTOMERS).map(([id, info]) => ({
+    id,
+    name: info.name,
+    email: info.email,
+  }));
+}
+
+function mapDbInvoice(row: any): DetailedInvoice {
+  const subtotalPaise = rupeesToPaise(Number(row.subtotal ?? 0));
+  const discountTotalPaise = rupeesToPaise(Number(row.discount_total ?? 0));
+  const taxTotalPaise = rupeesToPaise(Number(row.tax_total ?? 0));
+  const totalAmountPaise = rupeesToPaise(Number(row.total_amount ?? 0));
+  const amountPaidPaise = rupeesToPaise(Number(row.amount_paid ?? 0));
+  const amountDuePaise = rupeesToPaise(Number(row.amount_due ?? 0));
+
+  const items: InvoiceItem[] = (row.invoice_items ?? []).map((item: any) => ({
+    id: item.id,
+    invoiceId: item.invoice_id,
+    productId: item.product_id ?? undefined,
+    description: item.description,
+    quantity: Number(item.quantity ?? 1),
+    unitPricePaise: rupeesToPaise(Number(item.unit_price ?? 0)),
+    subtotalPaise: rupeesToPaise(Number(item.subtotal ?? 0)),
+    discountAmountPaise: rupeesToPaise(Number(item.discount_amount ?? 0)),
+    taxRatePercent: Number(item.tax_rate ?? 0),
+    taxAmountPaise: rupeesToPaise(Number(item.tax_amount ?? 0)),
+    totalAmountPaise: rupeesToPaise(Number(item.total_amount ?? 0)),
+    metadata: item.metadata,
+    createdAt: item.created_at,
+  }));
+
+  const payments = (row.payments ?? []).map((p: any) => ({
+    id: p.id,
+    invoiceId: p.invoice_id,
+    customerId: p.customer_id,
+    amount: Number(p.amount ?? 0),
+    amountPaise: rupeesToPaise(Number(p.amount ?? 0)),
+    currency: p.currency ?? "INR",
+    status: p.status,
+    paymentMethod: p.payment_method,
+    paymentMethodType: p.payment_method,
+    paymentDate: p.payment_date,
+    transactionReference: p.transaction_reference,
+    notes: p.notes,
+    createdAt: p.created_at,
+  }));
+
+  const customerName =
+    row.customer?.name ??
+    row.customer?.full_name ??
+    KNOWN_SEED_CUSTOMERS[row.customer_id]?.name ??
+    undefined;
+  const customerEmail =
+    row.customer?.email ??
+    KNOWN_SEED_CUSTOMERS[row.customer_id]?.email ??
+    undefined;
+
+  const rawStatus = (row.status ?? "draft") as ExtendedInvoiceStatus;
+  const extendedStatus = resolveInvoiceStatus(rawStatus, row.due_date, amountDuePaise);
+
+  return {
+    id: row.id,
+    invoiceNumber: row.invoice_number,
+    customerId: row.customer_id,
+    customerName,
+    customerEmail,
+    subscriptionId: row.subscription_id ?? undefined,
+    status: toBaseInvoiceStatus(extendedStatus),
+    extendedStatus,
+    currency: row.currency ?? "INR",
+    issueDate: row.issue_date,
+    dueDate: row.due_date,
+    periodStart: row.period_start ?? undefined,
+    periodEnd: row.period_end ?? undefined,
+    subtotalPaise,
+    discountTotalPaise,
+    taxTotalPaise,
+    totalAmountPaise,
+    amountPaidPaise,
+    amountDuePaise,
+    amountDue: Number(row.amount_due ?? 0),
+    amountPaid: Number(row.amount_paid ?? 0),
+    notes: row.notes ?? undefined,
+    createdAt: row.created_at,
+    items,
+    payments,
+  };
 }
 
 // 20 Deterministic seed invoices matching database seed
@@ -834,6 +960,49 @@ export interface InvoiceFilters {
 }
 
 export async function getInvoices(filters?: InvoiceFilters): Promise<DetailedInvoice[]> {
+  try {
+    const client = await createServerClient();
+    if (client) {
+      let query = client.from("invoices").select(`
+        *,
+        invoice_items (*),
+        payments (*)
+      `);
+
+      if (filters?.customerId) {
+        query = query.eq("customer_id", filters.customerId);
+      }
+      if (filters?.subscriptionId) {
+        query = query.eq("subscription_id", filters.subscriptionId);
+      }
+      if (filters?.status && filters.status !== "all") {
+        query = query.eq("status", filters.status);
+      }
+
+      query = query.order("issue_date", { ascending: false });
+
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        let mapped = data.map(mapDbInvoice);
+
+        if (filters?.search && filters.search.trim().length > 0) {
+          const q = filters.search.toLowerCase().trim();
+          mapped = mapped.filter(
+            (inv) =>
+              inv.invoiceNumber.toLowerCase().includes(q) ||
+              inv.customerName?.toLowerCase().includes(q) ||
+              inv.customerEmail?.toLowerCase().includes(q)
+          );
+        }
+
+        return mapped;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to query invoices from Supabase, falling back to local store:", err);
+  }
+
+  // Fallback to in-memory store
   let results = [...invoicesStore];
 
   if (filters?.customerId) {
@@ -879,6 +1048,29 @@ export async function getInvoices(filters?: InvoiceFilters): Promise<DetailedInv
 }
 
 export async function getInvoiceById(id: string): Promise<DetailedInvoice | null> {
+  try {
+    const client = await createServerClient();
+    if (client) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      const query = client
+        .from("invoices")
+        .select(`
+          *,
+          invoice_items (*),
+          payments (*)
+        `)
+        .eq(isUuid ? "id" : "invoice_number", id)
+        .maybeSingle();
+
+      const { data, error } = await query;
+      if (!error && data) {
+        return mapDbInvoice(data);
+      }
+    }
+  } catch (err) {
+    console.warn(`Failed to query invoice ${id} from Supabase, falling back to local store:`, err);
+  }
+
   const inv = invoicesStore.find((i) => i.id === id || i.invoiceNumber === id);
   if (!inv) return null;
 
@@ -926,26 +1118,133 @@ export function generateNextInvoiceNumber(): string {
   return `INV-2026-${nextNum}`;
 }
 
+export async function validateCustomer(
+  customerId: string,
+  customerEmail?: string
+): Promise<{ customerId: string; customerName: string; customerEmail: string }> {
+  // 1. Check database profiles if client is available
+  try {
+    const client = await createServerClient();
+    if (client) {
+      if (customerId) {
+        const { data } = await client
+          .from("profiles")
+          .select("id, name, email")
+          .eq("id", customerId)
+          .maybeSingle();
+        if (data) {
+          return {
+            customerId: data.id,
+            customerName: data.name || data.email,
+            customerEmail: data.email,
+          };
+        }
+      }
+      if (customerEmail) {
+        const { data } = await client
+          .from("profiles")
+          .select("id, name, email")
+          .eq("email", customerEmail)
+          .maybeSingle();
+        if (data) {
+          return {
+            customerId: data.id,
+            customerName: data.name || data.email,
+            customerEmail: data.email,
+          };
+        }
+      }
+    }
+  } catch {
+    // Continue to check local directories
+  }
+
+  // 2. Check seed customers dictionary
+  if (customerId && KNOWN_SEED_CUSTOMERS[customerId]) {
+    const c = KNOWN_SEED_CUSTOMERS[customerId];
+    return { customerId, customerName: c.name, customerEmail: c.email };
+  }
+
+  if (customerEmail) {
+    const matched = Object.entries(KNOWN_SEED_CUSTOMERS).find(
+      ([, info]) => info.email.toLowerCase() === customerEmail.toLowerCase()
+    );
+    if (matched) {
+      return { customerId: matched[0], customerName: matched[1].name, customerEmail: matched[1].email };
+    }
+  }
+
+  // 3. Check existing invoices store
+  const existingInv = invoicesStore.find(
+    (inv) =>
+      (customerId && inv.customerId === customerId) ||
+      (customerEmail && inv.customerEmail?.toLowerCase() === customerEmail.toLowerCase())
+  );
+  if (existingInv) {
+    return {
+      customerId: existingInv.customerId,
+      customerName: existingInv.customerName || "Customer",
+      customerEmail: existingInv.customerEmail || customerEmail || "customer@brightloop.io",
+    };
+  }
+
+  // Reject invalid customer
+  throw new Error(
+    `Invalid customer: Customer ${customerId || customerEmail} does not exist in the database or customer directory. Fake customer records are rejected.`
+  );
+}
+
 export async function createInvoice(params: CreateInvoiceParams): Promise<DetailedInvoice> {
   const invoiceId = crypto.randomUUID();
   const invoiceNumber = generateNextInvoiceNumber();
 
+  // Validate customer existence - do not accept fake customer UUIDs
+  const validCustomer = await validateCustomer(params.customerId, params.customerEmail);
+  const customerId = validCustomer.customerId;
+  const customerName = params.customerName || validCustomer.customerName;
+  const customerEmail = params.customerEmail || validCustomer.customerEmail;
+
+  // Partial unique constraint verification (idempotency for recurring subscriptions)
   if (params.subscriptionId && params.periodStart) {
-    const existing = invoicesStore.find(
+    try {
+      const client = await createServerClient();
+      if (client) {
+        const { data: existing } = await client
+          .from("invoices")
+          .select("id, invoice_number")
+          .eq("subscription_id", params.subscriptionId)
+          .eq("period_start", params.periodStart)
+          .neq("status", "cancelled")
+          .maybeSingle();
+
+        if (existing) {
+          throw new Error(
+            `Invoice already exists for subscription ${params.subscriptionId} for period ${params.periodStart} (${existing.invoice_number}).`
+          );
+        }
+      }
+    } catch (err: any) {
+      if (err.message && err.message.includes("already exists")) {
+        throw err;
+      }
+    }
+
+    const existingInStore = invoicesStore.find(
       (inv) =>
         inv.subscriptionId === params.subscriptionId &&
         inv.periodStart === params.periodStart &&
         inv.extendedStatus !== "cancelled"
     );
-    if (existing) {
+    if (existingInStore) {
       throw new Error(
-        `Invoice already exists for subscription ${params.subscriptionId} for period ${params.periodStart} (${existing.invoiceNumber}).`
+        `Invoice already exists for subscription ${params.subscriptionId} for period ${params.periodStart} (${existingInStore.invoiceNumber}).`
       );
     }
   }
 
   const calcInputs: LineItemCalculationInput[] = [];
   const processedItems: InvoiceItem[] = [];
+  const discountsToIncrement: string[] = [];
 
   for (const item of params.items) {
     let discountType: "percentage" | "fixed" | undefined;
@@ -955,11 +1254,19 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Detail
       const discount = await getDiscountByCode(item.discountCode);
       if (discount) {
         const itemSubtotal = item.quantity * item.unitPricePaise;
-        const evalResult = evaluateDiscountEligibility(discount, itemSubtotal, item.quantity);
+        const evalResult = evaluateDiscountEligibility(
+          discount,
+          itemSubtotal,
+          item.quantity,
+          {
+            productId: item.productId,
+            subscriptionId: params.subscriptionId,
+          }
+        );
         if (evalResult.valid) {
           discountType = discount.type;
           discountValue = discount.type === "percentage" ? discount.value : evalResult.discountPaise;
-          await incrementDiscountUsage(discount.code);
+          discountsToIncrement.push(discount.code);
         }
       }
     }
@@ -997,12 +1304,65 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Detail
   const extendedStatus: ExtendedInvoiceStatus = params.status || "confirmed";
   const baseStatus = toBaseInvoiceStatus(extendedStatus);
 
+  // Insert into Supabase if client is configured
+  try {
+    const client = await createServerClient();
+    if (client) {
+      const { error: invErr } = await client.from("invoices").insert({
+        id: invoiceId,
+        invoice_number: invoiceNumber,
+        customer_id: customerId,
+        subscription_id: params.subscriptionId || null,
+        status: baseStatus,
+        currency: "INR",
+        issue_date: new Date().toISOString(),
+        due_date: params.dueDate,
+        period_start: params.periodStart || null,
+        period_end: params.periodEnd || null,
+        subtotal: paiseToRupees(totals.subtotalPaise),
+        discount_total: paiseToRupees(totals.discountTotalPaise),
+        tax_total: paiseToRupees(totals.taxTotalPaise),
+        total_amount: paiseToRupees(totals.totalPaise),
+        amount_paid: 0.0,
+        amount_due: paiseToRupees(totals.totalPaise),
+        notes: params.notes || null,
+      });
+
+      if (invErr) {
+        console.warn("Supabase invoice insert warning:", invErr);
+      } else {
+        const dbItems = processedItems.map((it) => ({
+          id: it.id,
+          invoice_id: invoiceId,
+          product_id: it.productId || null,
+          description: it.description,
+          quantity: it.quantity,
+          unit_price: paiseToRupees(it.unitPricePaise),
+          subtotal: paiseToRupees(it.subtotalPaise),
+          discount_amount: paiseToRupees(it.discountAmountPaise),
+          tax_rate: it.taxRatePercent,
+          tax_amount: paiseToRupees(it.taxAmountPaise),
+          total_amount: paiseToRupees(it.totalAmountPaise),
+        }));
+
+        await client.from("invoice_items").insert(dbItems);
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to persist invoice to Supabase:", err);
+  }
+
+  // Update discount usage count after successful creation
+  for (const code of discountsToIncrement) {
+    await incrementDiscountUsage(code);
+  }
+
   const newInvoice: DetailedInvoice = {
     id: invoiceId,
     invoiceNumber,
-    customerId: params.customerId,
-    customerName: params.customerName || "Customer Account",
-    customerEmail: params.customerEmail || "customer@brightloop.io",
+    customerId,
+    customerName,
+    customerEmail,
     subscriptionId: params.subscriptionId,
     status: baseStatus,
     extendedStatus,
@@ -1048,6 +1408,21 @@ export async function updateInvoiceStatus(
   inv.extendedStatus = status;
   inv.status = toBaseInvoiceStatus(status);
 
+  try {
+    const client = await createServerClient();
+    if (client) {
+      await client
+        .from("invoices")
+        .update({
+          status: inv.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+    }
+  } catch (err) {
+    console.warn(`Failed to update invoice status in Supabase for ${id}:`, err);
+  }
+
   return { ...inv };
 }
 
@@ -1082,6 +1457,23 @@ export async function applyPaymentToInvoice(
   if (paymentRecord) {
     if (!inv.payments) inv.payments = [];
     inv.payments.unshift(paymentRecord);
+  }
+
+  try {
+    const client = await createServerClient();
+    if (client) {
+      await client
+        .from("invoices")
+        .update({
+          amount_paid: paiseToRupees(inv.amountPaidPaise),
+          amount_due: paiseToRupees(inv.amountDuePaise),
+          status: inv.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", invoiceId);
+    }
+  } catch (err) {
+    console.warn(`Failed to update invoice payment amounts in Supabase for ${invoiceId}:`, err);
   }
 
   return { ...inv };

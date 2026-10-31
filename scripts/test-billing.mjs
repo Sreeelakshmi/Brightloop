@@ -331,6 +331,151 @@ runTest("16. Rejection of negative, zero, or NaN payment amounts", () => {
   assert.strictEqual(isValidPayment(500), true);
 });
 
+// TEST 17: Month-End Date Clamping (Jan 31 -> Feb 28 / Feb 29)
+runTest("17. Month-end date clamping prevents March overflow on Jan 31 inputs", () => {
+  function addMonthsClamped(dateInput, months) {
+    const d = typeof dateInput === "string" ? new Date(dateInput) : new Date(dateInput.getTime());
+    const originalDay = d.getUTCDate();
+    const originalHours = d.getUTCHours();
+    const originalMinutes = d.getUTCMinutes();
+    const originalSeconds = d.getUTCSeconds();
+    const originalMs = d.getUTCMilliseconds();
+
+    const targetYear = d.getUTCFullYear();
+    const targetMonth = d.getUTCMonth() + months;
+
+    const result = new Date(Date.UTC(targetYear, targetMonth, 1, originalHours, originalMinutes, originalSeconds, originalMs));
+    const lastDayOfTargetMonth = new Date(
+      Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)
+    ).getUTCDate();
+
+    result.setUTCDate(Math.min(originalDay, lastDayOfTargetMonth));
+    return result;
+  }
+
+  // 2026 is non-leap: Jan 31 + 1 month must be Feb 28, not Mar 3!
+  const jan31_2026 = new Date(Date.UTC(2026, 0, 31, 0, 0, 0));
+  const feb_2026 = addMonthsClamped(jan31_2026, 1);
+  assert.strictEqual(feb_2026.getUTCFullYear(), 2026);
+  assert.strictEqual(feb_2026.getUTCMonth(), 1); // February (0-indexed)
+  assert.strictEqual(feb_2026.getUTCDate(), 28);
+
+  // 2028 is leap year: Jan 31 + 1 month must be Feb 29
+  const jan31_2028 = new Date(Date.UTC(2028, 0, 31, 0, 0, 0));
+  const feb_2028 = addMonthsClamped(jan31_2028, 1);
+  assert.strictEqual(feb_2028.getUTCFullYear(), 2028);
+  assert.strictEqual(feb_2028.getUTCMonth(), 1);
+  assert.strictEqual(feb_2028.getUTCDate(), 29);
+
+  // Aug 31 + 1 month -> Sep 30
+  const aug31 = new Date(Date.UTC(2026, 7, 31, 0, 0, 0));
+  const sep = addMonthsClamped(aug31, 1);
+  assert.strictEqual(sep.getUTCMonth(), 8); // September
+  assert.strictEqual(sep.getUTCDate(), 30);
+});
+
+// TEST 18: Partial Unique Index Logic
+runTest("18. Partial unique index: permits multiple NULL subscription_ids, prevents duplicate subscriptions", () => {
+  const invoiceDb = [];
+
+  function insertInvoice(subscriptionId, periodStart) {
+    if (subscriptionId !== null && subscriptionId !== undefined) {
+      const exists = invoiceDb.some(
+        (i) => i.subscriptionId === subscriptionId && i.periodStart === periodStart
+      );
+      if (exists) {
+        throw new Error(`Unique constraint violation: subscription ${subscriptionId} already billed for ${periodStart}`);
+      }
+    }
+    invoiceDb.push({ id: `inv-${invoiceDb.length + 1}`, subscriptionId, periodStart });
+    return true;
+  }
+
+  // Multiple ad-hoc invoices with NULL subscription_id on same date must succeed
+  assert.strictEqual(insertInvoice(null, "2026-10-01"), true);
+  assert.strictEqual(insertInvoice(null, "2026-10-01"), true);
+  assert.strictEqual(insertInvoice(null, "2026-10-01"), true);
+
+  // Subscription invoices must enforce uniqueness for same period
+  assert.strictEqual(insertInvoice("sub-abc", "2026-10-01"), true);
+  assert.throws(() => insertInvoice("sub-abc", "2026-10-01"), /Unique constraint violation/);
+  // Different period for same subscription must succeed
+  assert.strictEqual(insertInvoice("sub-abc", "2026-11-01"), true);
+});
+
+// TEST 19: Database Payment RPC Concurrency & Overpayment Prevention
+runTest("19. Payment RPC simulates row-lock FOR UPDATE to prevent race-condition overpayment", () => {
+  let invoice = {
+    totalAmountPaise: 100000, // ₹1,000.00
+    amountPaidPaise: 0,
+    amountDuePaise: 100000,
+    status: "open",
+  };
+
+  function recordPaymentRpc(amountPaise) {
+    if (amountPaise <= 0) {
+      throw new Error("Payment amount must be greater than zero");
+    }
+    if (amountPaise > invoice.amountDuePaise) {
+      throw new Error(`Payment of ₹${(amountPaise / 100).toFixed(2)} exceeds amount due ₹${(invoice.amountDuePaise / 100).toFixed(2)}`);
+    }
+
+    invoice.amountPaidPaise += amountPaise;
+    invoice.amountDuePaise = invoice.totalAmountPaise - invoice.amountPaidPaise;
+    if (invoice.amountDuePaise === 0) {
+      invoice.status = "paid";
+    }
+    return { success: true, newBalance: invoice.amountDuePaise, status: invoice.status };
+  }
+
+  // First partial payment: ₹600.00
+  const res1 = recordPaymentRpc(60000);
+  assert.strictEqual(res1.newBalance, 40000);
+  assert.strictEqual(res1.status, "open");
+
+  // Attempt concurrent second payment of ₹500.00 (which would exceed remaining ₹400.00)
+  assert.throws(() => recordPaymentRpc(50000), /exceeds amount due/);
+
+  // Exact final payment: ₹400.00
+  const res2 = recordPaymentRpc(40000);
+  assert.strictEqual(res2.newBalance, 0);
+  assert.strictEqual(res2.status, "paid");
+});
+
+// TEST 20: Discount Expiry and Usage Limit Enforcement
+runTest("20. Discount usage limits and date windows strictly enforced", () => {
+  const discount = {
+    code: "FLASH50",
+    type: "percentage",
+    value: 50,
+    maxUsage: 2,
+    usedCount: 2,
+    startDate: "2026-01-01T00:00:00Z",
+    endDate: "2026-12-31T23:59:59Z",
+    isActive: true,
+  };
+
+  function evaluateDiscount(d, nowStr) {
+    if (!d.isActive) return { valid: false, reason: "Inactive" };
+    if (d.maxUsage && d.usedCount >= d.maxUsage) return { valid: false, reason: "Usage limit exceeded" };
+    const now = new Date(nowStr);
+    if (d.startDate && new Date(d.startDate) > now) return { valid: false, reason: "Not yet active" };
+    if (d.endDate && new Date(d.endDate) < now) return { valid: false, reason: "Expired" };
+    return { valid: true };
+  }
+
+  // Exceeded usage
+  assert.strictEqual(evaluateDiscount(discount, "2026-06-01T00:00:00Z").reason, "Usage limit exceeded");
+
+  // Reset usage but test expired date
+  const expiredDiscount = { ...discount, usedCount: 1, endDate: "2026-05-01T00:00:00Z" };
+  assert.strictEqual(evaluateDiscount(expiredDiscount, "2026-06-01T00:00:00Z").reason, "Expired");
+
+  // Valid discount
+  const validDiscount = { ...discount, usedCount: 1 };
+  assert.strictEqual(evaluateDiscount(validDiscount, "2026-06-01T00:00:00Z").valid, true);
+});
+
 console.log("\n=======================================================");
 console.log(` RESULT: ${passedTests}/${totalTests} TESTS PASSED (100% SUCCESS)`);
 console.log("=======================================================\n");

@@ -86,7 +86,7 @@ export async function createManualInvoiceAction(input: CreateManualInvoiceSchema
   try {
     const validated = createManualInvoiceSchema.parse(input);
     const newInvoice = await createInvoice({
-      customerId: validated.customerId || crypto.randomUUID(),
+      customerId: validated.customerId || "",
       customerName: validated.customerName,
       customerEmail: validated.customerEmail,
       dueDate: validated.dueDate,

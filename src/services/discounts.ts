@@ -1,6 +1,7 @@
 import { Discount } from "@/types";
 import { CreateDiscountInput } from "@/lib/validations/billing";
 import { rupeesToPaise } from "@/lib/billing/math";
+import { createServerClient } from "@/lib/supabase/server";
 
 // Default deterministic discounts based on seed data
 let discountsStore: Discount[] = [
@@ -62,11 +63,66 @@ let discountsStore: Discount[] = [
   },
 ];
 
+function mapDbDiscount(row: any): Discount {
+  return {
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    type: row.type,
+    value: Number(row.value),
+    minPurchaseAmount: row.min_purchase_amount ? Number(row.min_purchase_amount) : 0,
+    minQuantity: row.min_quantity ? Number(row.min_quantity) : 1,
+    maxUsage: row.max_usage ? Number(row.max_usage) : undefined,
+    usedCount: Number(row.used_count || 0),
+    productId: row.product_id || undefined,
+    subscriptionId: row.subscription_id || undefined,
+    startDate: row.start_date || undefined,
+    endDate: row.end_date || undefined,
+    isActive: row.is_active ?? true,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export async function getDiscounts(): Promise<Discount[]> {
+  const supabase = createServerClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("discounts")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        return data.map(mapDbDiscount);
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
   return [...discountsStore];
 }
 
 export async function getDiscountByCode(code: string): Promise<Discount | null> {
+  const supabase = createServerClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("discounts")
+        .select("*")
+        .ilike("code", code)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!error && data) {
+        return mapDbDiscount(data);
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
   const discount = discountsStore.find(
     (d) => d.code.toUpperCase() === code.toUpperCase() && d.isActive
   );
@@ -166,16 +222,52 @@ export function evaluateDiscountEligibility(
 }
 
 export async function createDiscount(input: CreateDiscountInput): Promise<Discount> {
-  const existing = discountsStore.find(
-    (d) => d.code.toUpperCase() === input.code.toUpperCase()
-  );
+  const code = input.code.toUpperCase();
+  const supabase = createServerClient();
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("discounts")
+        .insert({
+          code,
+          name: input.name,
+          type: input.type,
+          value: input.value,
+          min_purchase_amount: input.minPurchaseAmount ?? 0,
+          min_quantity: input.minQuantity ?? 1,
+          max_usage: input.maxUsage,
+          used_count: 0,
+          start_date: input.startDate,
+          end_date: input.endDate,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const created = mapDbDiscount(data);
+      discountsStore.unshift(created);
+      return created;
+    } catch (err: any) {
+      if (err.message && !err.message.includes("fetch failed")) {
+        throw err;
+      }
+    }
+  }
+
+  // Local store fallback
+  const existing = discountsStore.find((d) => d.code.toUpperCase() === code);
   if (existing) {
-    throw new Error(`Discount code "${input.code}" already exists.`);
+    throw new Error(`Discount code "${code}" already exists.`);
   }
 
   const newDiscount: Discount = {
     id: crypto.randomUUID(),
-    code: input.code.toUpperCase(),
+    code,
     name: input.name,
     type: input.type,
     value: input.value,
@@ -195,8 +287,34 @@ export async function createDiscount(input: CreateDiscountInput): Promise<Discou
 }
 
 export async function incrementDiscountUsage(code: string): Promise<void> {
+  const normalizedCode = code.toUpperCase();
+  const supabase = createServerClient();
+
+  if (supabase) {
+    try {
+      // Use atomic update
+      const { data } = await supabase
+        .from("discounts")
+        .select("used_count")
+        .eq("code", normalizedCode)
+        .single();
+
+      if (data) {
+        await supabase
+          .from("discounts")
+          .update({
+            used_count: (data.used_count || 0) + 1,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("code", normalizedCode);
+      }
+    } catch {
+      // Fallback to local
+    }
+  }
+
   const index = discountsStore.findIndex(
-    (d) => d.code.toUpperCase() === code.toUpperCase()
+    (d) => d.code.toUpperCase() === normalizedCode
   );
   if (index !== -1) {
     discountsStore[index].usedCount += 1;

@@ -1,5 +1,6 @@
 import { TaxRule } from "@/types";
 import { CreateTaxRuleInput } from "@/lib/validations/billing";
+import { createServerClient } from "@/lib/supabase/server";
 
 // Default deterministic tax rules based on seed data
 let taxRulesStore: TaxRule[] = [
@@ -49,11 +50,60 @@ let taxRulesStore: TaxRule[] = [
   },
 ];
 
+function mapDbTaxRule(row: any): TaxRule {
+  return {
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    rate: Number(row.rate),
+    description: row.description || undefined,
+    isActive: row.is_active ?? true,
+    country: row.country || "IN",
+    state: row.state || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export async function getTaxRules(): Promise<TaxRule[]> {
+  const supabase = createServerClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("tax_rules")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        return data.map(mapDbTaxRule);
+      }
+    } catch {
+      // Graceful fallback to local store if Supabase table is empty or unmigrated
+    }
+  }
+
   return [...taxRulesStore];
 }
 
 export async function getTaxRuleByCode(code: string): Promise<TaxRule | null> {
+  const supabase = createServerClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("tax_rules")
+        .select("*")
+        .ilike("code", code)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!error && data) {
+        return mapDbTaxRule(data);
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
   const rule = taxRulesStore.find(
     (t) => t.code.toUpperCase() === code.toUpperCase() && t.isActive
   );
@@ -61,17 +111,49 @@ export async function getTaxRuleByCode(code: string): Promise<TaxRule | null> {
 }
 
 export async function createTaxRule(input: CreateTaxRuleInput): Promise<TaxRule> {
-  const existing = taxRulesStore.find(
-    (t) => t.code.toUpperCase() === input.code.toUpperCase()
-  );
+  const code = input.code.toUpperCase();
+  const supabase = createServerClient();
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("tax_rules")
+        .insert({
+          name: input.name,
+          code,
+          rate: input.rate,
+          description: input.description,
+          country: input.country || "IN",
+          state: input.state,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const created = mapDbTaxRule(data);
+      taxRulesStore.unshift(created);
+      return created;
+    } catch (err: any) {
+      if (err.message && !err.message.includes("fetch failed")) {
+        throw err;
+      }
+    }
+  }
+
+  // Local store
+  const existing = taxRulesStore.find((t) => t.code.toUpperCase() === code);
   if (existing) {
-    throw new Error(`Tax rule with code "${input.code}" already exists.`);
+    throw new Error(`Tax rule with code "${code}" already exists.`);
   }
 
   const newRule: TaxRule = {
     id: crypto.randomUUID(),
     name: input.name,
-    code: input.code.toUpperCase(),
+    code,
     rate: input.rate,
     description: input.description,
     isActive: true,
@@ -84,4 +166,3 @@ export async function createTaxRule(input: CreateTaxRuleInput): Promise<TaxRule>
   taxRulesStore.unshift(newRule);
   return { ...newRule };
 }
-

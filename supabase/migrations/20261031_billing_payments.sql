@@ -57,10 +57,7 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     amount_due NUMERIC(12,2) NOT NULL DEFAULT 0.00 CHECK (amount_due >= 0),
     notes TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
-    
-    -- Crucial constraint for recurring billing idempotency
-    CONSTRAINT uq_subscription_period UNIQUE NULLS NOT DISTINCT (subscription_id, period_start)
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
 -- 4. INVOICE ITEMS (Itemized Snapshots)
@@ -106,6 +103,11 @@ CREATE INDEX IF NOT EXISTS idx_payments_invoice_id ON public.payments(invoice_id
 CREATE INDEX IF NOT EXISTS idx_payments_customer_id ON public.payments(customer_id);
 CREATE INDEX IF NOT EXISTS idx_discounts_code ON public.discounts(code);
 CREATE INDEX IF NOT EXISTS idx_tax_rules_code ON public.tax_rules(code);
+
+-- Partial unique index for recurring billing idempotency (excludes NULL subscription_id)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_invoices_subscription_period 
+ON public.invoices(subscription_id, period_start) 
+WHERE subscription_id IS NOT NULL;
 
 -- Row Level Security (RLS)
 ALTER TABLE public.tax_rules ENABLE ROW LEVEL SECURITY;

@@ -154,3 +154,89 @@ export function validatePaymentAmount(paymentPaise: number, amountDuePaise: numb
   return null;
 }
 
+/**
+ * Add months to a date clamping to month-end when day exceeds target month length.
+ * Correctly handles edge cases like Jan 31 + 1 month -> Feb 28 (or Feb 29 in leap year).
+ */
+export function addMonthsClamped(dateInput: Date | string, months: number): Date {
+  const d = typeof dateInput === "string" ? new Date(dateInput) : new Date(dateInput.getTime());
+  const originalDay = d.getUTCDate();
+  const originalHours = d.getUTCHours();
+  const originalMinutes = d.getUTCMinutes();
+  const originalSeconds = d.getUTCSeconds();
+  const originalMs = d.getUTCMilliseconds();
+
+  const targetYear = d.getUTCFullYear();
+  const targetMonth = d.getUTCMonth() + months;
+
+  // Day 1 of target month in UTC
+  const result = new Date(Date.UTC(targetYear, targetMonth, 1, originalHours, originalMinutes, originalSeconds, originalMs));
+
+  // Determine last day of target month (day 0 of month + 1)
+  const lastDayOfTargetMonth = new Date(
+    Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)
+  ).getUTCDate();
+
+  // Clamp to valid day
+  result.setUTCDate(Math.min(originalDay, lastDayOfTargetMonth));
+  return result;
+}
+
+/**
+ * Advances a billing date by daily, weekly, monthly, quarterly, or yearly frequency.
+ * Enforces month-end date clamping (e.g. Jan 31 -> Feb 28).
+ */
+export function advanceBillingDate(
+  currentDateStr: string,
+  interval: string
+): { nextBillingDate: string; nextPeriodEnd: string } {
+  const current = new Date(currentDateStr);
+  const freq = interval.toLowerCase();
+
+  let nextStart: Date;
+  let nextEnd: Date;
+
+  switch (freq) {
+    case "day":
+    case "daily": {
+      nextStart = new Date(current.getTime() + 24 * 60 * 60 * 1000);
+      nextEnd = new Date(nextStart.getTime() + 24 * 60 * 60 * 1000);
+      break;
+    }
+    case "week":
+    case "weekly": {
+      nextStart = new Date(current.getTime() + 7 * 24 * 60 * 60 * 1000);
+      nextEnd = new Date(nextStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      break;
+    }
+    case "quarter":
+    case "quarterly": {
+      nextStart = addMonthsClamped(current, 3);
+      nextEnd = addMonthsClamped(nextStart, 3);
+      break;
+    }
+    case "year":
+    case "yearly":
+    case "annual": {
+      nextStart = addMonthsClamped(current, 12);
+      nextEnd = addMonthsClamped(nextStart, 12);
+      break;
+    }
+    case "month":
+    case "monthly":
+    default: {
+      nextStart = addMonthsClamped(current, 1);
+      nextEnd = addMonthsClamped(nextStart, 1);
+      break;
+    }
+  }
+
+  // End of cycle is 1 second before next cycle starts
+  nextEnd = new Date(nextEnd.getTime() - 1000);
+
+  return {
+    nextBillingDate: nextStart.toISOString(),
+    nextPeriodEnd: nextEnd.toISOString(),
+  };
+}
+

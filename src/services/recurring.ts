@@ -1,5 +1,9 @@
 import { SubscriptionBillingContract, DetailedInvoice, BillingFrequency, BillingInterval } from "@/types";
 import { createInvoice } from "./invoices";
+import { advanceBillingDate } from "@/lib/billing/math";
+import { createServerClient } from "@/lib/supabase/server";
+
+export { advanceBillingDate };
 
 // Active subscriptions store (integrating Member 2 contract)
 let activeSubscriptionsStore: SubscriptionBillingContract[] = [
@@ -86,58 +90,6 @@ let activeSubscriptionsStore: SubscriptionBillingContract[] = [
   },
 ];
 
-/**
- * Calculates next date advancing by interval safely
- * Supports daily, weekly, monthly, quarterly, and yearly frequencies
- */
-export function advanceBillingDate(
-  currentDateStr: string,
-  interval: BillingInterval | BillingFrequency | string
-): { nextBillingDate: string; nextPeriodEnd: string } {
-  const current = new Date(currentDateStr);
-  const nextStart = new Date(current);
-  const nextEnd = new Date(current);
-
-  const freq = interval.toLowerCase();
-
-  switch (freq) {
-    case "day":
-    case "daily":
-      nextStart.setDate(nextStart.getDate() + 1);
-      nextEnd.setDate(nextEnd.getDate() + 2);
-      break;
-    case "week":
-    case "weekly":
-      nextStart.setDate(nextStart.getDate() + 7);
-      nextEnd.setDate(nextEnd.getDate() + 14);
-      break;
-    case "quarter":
-    case "quarterly":
-      nextStart.setMonth(nextStart.getMonth() + 3);
-      nextEnd.setMonth(nextEnd.getMonth() + 6);
-      break;
-    case "year":
-    case "yearly":
-    case "annual":
-      nextStart.setFullYear(nextStart.getFullYear() + 1);
-      nextEnd.setFullYear(nextEnd.getFullYear() + 2);
-      break;
-    case "month":
-    case "monthly":
-    default:
-      nextStart.setMonth(nextStart.getMonth() + 1);
-      nextEnd.setMonth(nextEnd.getMonth() + 2);
-      break;
-  }
-
-  nextEnd.setSeconds(nextEnd.getSeconds() - 1);
-
-  return {
-    nextBillingDate: nextStart.toISOString(),
-    nextPeriodEnd: nextEnd.toISOString(),
-  };
-}
-
 export interface RecurringBillingResult {
   runTimestamp: string;
   processedCount: number;
@@ -148,7 +100,8 @@ export interface RecurringBillingResult {
 
 /**
  * Core Recurring Billing Execution Engine
- * Enforces atomic invoice generation and date advancement with idempotency lock
+ * Enforces atomic invoice generation and date advancement with idempotency lock.
+ * Pulls active subscriptions from Supabase when configured, with fallback to local store.
  */
 export async function runRecurringBilling(options?: {
   targetDate?: string;
@@ -157,10 +110,75 @@ export async function runRecurringBilling(options?: {
   const targetTime = options?.targetDate ? new Date(options.targetDate) : new Date();
   const runTimestamp = new Date().toISOString();
 
-  // Find eligible subscriptions
-  const dueSubscriptions = activeSubscriptionsStore.filter(
-    (sub) => sub.status === "active" && new Date(sub.nextBillingDate) <= targetTime
-  );
+  let dueSubscriptions: SubscriptionBillingContract[] = [];
+  let isFromDb = false;
+
+  try {
+    const client = await createServerClient();
+    if (client) {
+      const { data: dbSubs, error } = await client
+        .from("subscriptions")
+        .select(`
+          id,
+          customer_id,
+          status,
+          next_billing_date,
+          current_period_start,
+          current_period_end,
+          billing_interval,
+          plan_id,
+          profiles:customer_id (name, email),
+          plans:plan_id (name, interval, amount),
+          subscription_lines (
+            id,
+            product_id,
+            quantity,
+            unit_price
+          )
+        `)
+        .eq("status", "active")
+        .lte("next_billing_date", targetTime.toISOString());
+
+      if (!error && dbSubs && dbSubs.length > 0) {
+        isFromDb = true;
+        dueSubscriptions = dbSubs.map((s: any) => {
+          const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
+          const plan = Array.isArray(s.plans) ? s.plans[0] : s.plans;
+          const lines = s.subscription_lines || [];
+          const primaryLine = lines[0];
+
+          const unitPricePaise = primaryLine
+            ? Math.round(Number(primaryLine.unit_price) * 100)
+            : Math.round(Number(plan?.amount || 0) * 100);
+
+          return {
+            subscriptionId: s.id,
+            customerId: s.customer_id,
+            customerName: profile?.name || "Customer",
+            customerEmail: profile?.email || "customer@brightloop.io",
+            planId: s.plan_id || "default-plan",
+            planName: plan?.name || "Subscription Service",
+            quantity: primaryLine?.quantity || 1,
+            unitPricePaise,
+            billingInterval: (s.billing_interval || plan?.interval || "month") as BillingInterval,
+            currentPeriodStart: s.current_period_start || s.next_billing_date,
+            currentPeriodEnd: s.current_period_end || s.next_billing_date,
+            nextBillingDate: s.next_billing_date,
+            status: s.status,
+            taxRuleCode: "GST_18",
+          };
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to fetch subscriptions from Supabase, falling back to local store:", err);
+  }
+
+  if (!isFromDb) {
+    dueSubscriptions = activeSubscriptionsStore.filter(
+      (sub) => sub.status === "active" && new Date(sub.nextBillingDate) <= targetTime
+    );
+  }
 
   const result: RecurringBillingResult = {
     runTimestamp,
@@ -211,20 +229,48 @@ export async function runRecurringBilling(options?: {
       });
 
       // 3. Atomically advance next_billing_date ONLY after successful invoice creation
-      sub.currentPeriodStart = periodStart;
-      sub.currentPeriodEnd = periodEnd;
-      sub.nextBillingDate = advancedDate;
+      if (isFromDb) {
+        try {
+          const client = await createServerClient();
+          if (client) {
+            await client
+              .from("subscriptions")
+              .update({
+                current_period_start: periodStart,
+                current_period_end: periodEnd,
+                next_billing_date: advancedDate,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", sub.subscriptionId);
+          }
+        } catch (dbErr) {
+          console.warn("Failed to advance subscription date in Supabase:", dbErr);
+        }
+      }
+
+      // Also advance in-memory store if present
+      const storeSub = activeSubscriptionsStore.find((s) => s.subscriptionId === sub.subscriptionId);
+      if (storeSub) {
+        storeSub.currentPeriodStart = periodStart;
+        storeSub.currentPeriodEnd = periodEnd;
+        storeSub.nextBillingDate = advancedDate;
+      }
 
       result.invoicesCreated.push(newInvoice);
     } catch (err: any) {
       if (err.message && err.message.includes("already exists")) {
         result.skippedDuplicateCount++;
         // Sync date so subscription doesn't remain perpetually stuck on already-billed period
-        const { nextBillingDate: advancedDate } = advanceBillingDate(
+        const { nextBillingDate: advancedDate, nextPeriodEnd: periodEnd } = advanceBillingDate(
           sub.nextBillingDate,
           sub.billingInterval
         );
-        sub.nextBillingDate = advancedDate;
+        const storeSub = activeSubscriptionsStore.find((s) => s.subscriptionId === sub.subscriptionId);
+        if (storeSub) {
+          storeSub.currentPeriodStart = sub.nextBillingDate;
+          storeSub.currentPeriodEnd = periodEnd;
+          storeSub.nextBillingDate = advancedDate;
+        }
       } else {
         result.errors.push({
           subscriptionId: sub.subscriptionId,
@@ -238,5 +284,64 @@ export async function runRecurringBilling(options?: {
 }
 
 export async function getActiveSubscriptions(): Promise<SubscriptionBillingContract[]> {
+  try {
+    const client = await createServerClient();
+    if (client) {
+      const { data: dbSubs, error } = await client
+        .from("subscriptions")
+        .select(`
+          id,
+          customer_id,
+          status,
+          next_billing_date,
+          current_period_start,
+          current_period_end,
+          billing_interval,
+          plan_id,
+          profiles:customer_id (name, email),
+          plans:plan_id (name, interval, amount),
+          subscription_lines (
+            id,
+            product_id,
+            quantity,
+            unit_price
+          )
+        `)
+        .eq("status", "active");
+
+      if (!error && dbSubs && dbSubs.length > 0) {
+        return dbSubs.map((s: any) => {
+          const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
+          const plan = Array.isArray(s.plans) ? s.plans[0] : s.plans;
+          const lines = s.subscription_lines || [];
+          const primaryLine = lines[0];
+
+          const unitPricePaise = primaryLine
+            ? Math.round(Number(primaryLine.unit_price) * 100)
+            : Math.round(Number(plan?.amount || 0) * 100);
+
+          return {
+            subscriptionId: s.id,
+            customerId: s.customer_id,
+            customerName: profile?.name || "Customer",
+            customerEmail: profile?.email || "customer@brightloop.io",
+            planId: s.plan_id || "default-plan",
+            planName: plan?.name || "Subscription Service",
+            quantity: primaryLine?.quantity || 1,
+            unitPricePaise,
+            billingInterval: (s.billing_interval || plan?.interval || "month") as BillingInterval,
+            currentPeriodStart: s.current_period_start || s.next_billing_date,
+            currentPeriodEnd: s.current_period_end || s.next_billing_date,
+            nextBillingDate: s.next_billing_date,
+            status: s.status,
+            taxRuleCode: "GST_18",
+          };
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to fetch subscriptions from Supabase, falling back to local store:", err);
+  }
+
   return [...activeSubscriptionsStore];
 }

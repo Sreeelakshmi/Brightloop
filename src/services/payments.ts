@@ -2,6 +2,7 @@ import { DetailedPayment, PaymentMethodType } from "@/types";
 import { rupeesToPaise, paiseToRupees, formatINR } from "@/lib/billing/math";
 import { RecordPaymentInput } from "@/lib/validations/billing";
 import { getInvoiceById, applyPaymentToInvoice } from "./invoices";
+import { createServerClient } from "@/lib/supabase/server";
 
 // 12 Deterministic seed payments matching the seed data
 let paymentsStore: DetailedPayment[] = [
@@ -187,6 +188,24 @@ let paymentsStore: DetailedPayment[] = [
   },
 ];
 
+function mapDbPayment(row: any): DetailedPayment {
+  return {
+    id: row.id,
+    invoiceId: row.invoice_id,
+    customerId: row.customer_id,
+    amount: Number(row.amount),
+    amountPaise: rupeesToPaise(Number(row.amount)),
+    currency: row.currency || "INR",
+    status: row.status,
+    paymentMethod: row.payment_method,
+    paymentMethodType: row.payment_method as PaymentMethodType,
+    paymentDate: row.payment_date,
+    transactionReference: row.transaction_reference || undefined,
+    notes: row.notes || undefined,
+    createdAt: row.created_at,
+  };
+}
+
 export interface PaymentFilters {
   invoiceId?: string;
   customerId?: string;
@@ -195,6 +214,33 @@ export interface PaymentFilters {
 }
 
 export async function getPayments(filters?: PaymentFilters): Promise<DetailedPayment[]> {
+  const supabase = createServerClient();
+  if (supabase) {
+    try {
+      let query = supabase.from("payments").select("*").order("payment_date", { ascending: false });
+
+      if (filters?.invoiceId) {
+        query = query.eq("invoice_id", filters.invoiceId);
+      }
+      if (filters?.customerId) {
+        query = query.eq("customer_id", filters.customerId);
+      }
+      if (filters?.paymentMethod && filters.paymentMethod !== "all") {
+        query = query.eq("payment_method", filters.paymentMethod);
+      }
+      if (filters?.status && filters.status !== "all") {
+        query = query.eq("status", filters.status);
+      }
+
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        return data.map(mapDbPayment);
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
   let results = [...paymentsStore];
 
   if (filters?.invoiceId) {
@@ -213,7 +259,6 @@ export async function getPayments(filters?: PaymentFilters): Promise<DetailedPay
     results = results.filter((p) => p.status === filters.status);
   }
 
-  // Sort newest first
   return results.sort(
     (a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
   );
@@ -249,8 +294,13 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{
     );
   }
 
+  const newPaymentId = crypto.randomUUID();
+  const txRef =
+    input.transactionReference ||
+    `TXN_${input.paymentMethod.toUpperCase()}_${Math.floor(100000 + Math.random() * 900000)}`;
+
   const newPayment: DetailedPayment = {
-    id: crypto.randomUUID(),
+    id: newPaymentId,
     invoiceId: invoice.id,
     customerId: input.customerId || invoice.customerId,
     amount: input.amountRupees,
@@ -260,16 +310,64 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{
     paymentMethod: input.paymentMethod,
     paymentMethodType: input.paymentMethod as PaymentMethodType,
     paymentDate: new Date().toISOString(),
-    transactionReference:
-      input.transactionReference ||
-      `TXN_${input.paymentMethod.toUpperCase()}_${Math.floor(100000 + Math.random() * 900000)}`,
+    transactionReference: txRef,
     notes: input.notes,
     createdAt: new Date().toISOString(),
   };
 
-  // Atomically update invoice
-  const updatedInvoice = await applyPaymentToInvoice(invoice.id, paymentPaise, newPayment);
+  const supabase = createServerClient();
+  let rpcSucceeded = false;
 
+  if (supabase) {
+    try {
+      // 1. Attempt database RPC for atomic row-locking execution
+      const { data: rpcData, error: rpcError } = await supabase.rpc("record_invoice_payment", {
+        p_invoice_id: invoice.id,
+        p_customer_id: input.customerId || invoice.customerId,
+        p_amount: input.amountRupees,
+        p_payment_method: input.paymentMethod,
+        p_transaction_reference: txRef,
+        p_notes: input.notes || null,
+      });
+
+      if (!rpcError && rpcData) {
+        rpcSucceeded = true;
+      } else {
+        // Fallback: direct table operations if RPC not yet deployed
+        await supabase.from("payments").insert({
+          id: newPaymentId,
+          invoice_id: invoice.id,
+          customer_id: input.customerId || invoice.customerId,
+          amount: input.amountRupees,
+          currency: "INR",
+          payment_method: input.paymentMethod,
+          status: "succeeded",
+          payment_date: new Date().toISOString(),
+          transaction_reference: txRef,
+          notes: input.notes,
+        });
+
+        const newPaidPaise = invoice.amountPaidPaise + paymentPaise;
+        const newDuePaise = Math.max(0, invoice.totalAmountPaise - newPaidPaise);
+        const newStatus = newDuePaise === 0 ? "paid" : invoice.status;
+
+        await supabase
+          .from("invoices")
+          .update({
+            amount_paid: paiseToRupees(newPaidPaise),
+            amount_due: paiseToRupees(newDuePaise),
+            status: newStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", invoice.id);
+      }
+    } catch {
+      // Supabase write fallback
+    }
+  }
+
+  // Atomically update invoice in memory store
+  const updatedInvoice = await applyPaymentToInvoice(invoice.id, paymentPaise, newPayment);
   paymentsStore.unshift(newPayment);
 
   return {
@@ -277,4 +375,3 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{
     updatedInvoice,
   };
 }
-

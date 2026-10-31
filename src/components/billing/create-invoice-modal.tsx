@@ -30,13 +30,27 @@ interface FormItem {
   discountCode: string;
 }
 
+const PRESET_CUSTOMERS = [
+  { id: "a0000000-0000-4000-8000-000000000001", name: "Astra Tech Solutions", email: "billing@astratech.in" },
+  { id: "a0000000-0000-4000-8000-000000000002", name: "Nexora Analytics", email: "finance@nexora.io" },
+  { id: "a0000000-0000-4000-8000-000000000003", name: "Kite Fintech Labs", email: "accounts@kitefintech.com" },
+  { id: "a0000000-0000-4000-8000-000000000004", name: "CloudScale Systems", email: "ops@cloudscale.net" },
+  { id: "a0000000-0000-4000-8000-000000000005", name: "Zenith Retail Tech", email: "pay@zenithretail.in" },
+  { id: "a0000000-0000-4000-8000-000000000006", name: "Bytecraft Software", email: "contact@bytecraft.dev" },
+  { id: "a0000000-0000-4000-8000-000000000007", name: "Orbit Logistics", email: "accounts@orbitlogistics.co" },
+  { id: "a0000000-0000-4000-8000-000000000008", name: "Quantum AI Dynamics", email: "billing@quantumai.dev" },
+  { id: "a0000000-0000-4000-8000-000000000009", name: "Hyperion Cloud", email: "finance@hyperioncloud.io" },
+  { id: "a0000000-0000-4000-8000-000000000010", name: "Solaria Energy", email: "accounts@solaria.energy" },
+];
+
 export function CreateInvoiceModal({
   isOpen,
   onClose,
   onSuccess,
 }: CreateInvoiceModalProps) {
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
+  const [selectedCustomerId, setSelectedCustomerId] = useState(PRESET_CUSTOMERS[0].id);
+  const [customerName, setCustomerName] = useState(PRESET_CUSTOMERS[0].name);
+  const [customerEmail, setCustomerEmail] = useState(PRESET_CUSTOMERS[0].email);
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 15);
@@ -112,6 +126,7 @@ export function CreateInvoiceModal({
     setIsSubmitting(true);
     try {
       const res = await createManualInvoiceAction({
+        customerId: selectedCustomerId || undefined,
         customerName: customerName.trim(),
         customerEmail: customerEmail.trim(),
         dueDate: new Date(dueDate).toISOString(),
@@ -181,35 +196,60 @@ export function CreateInvoiceModal({
             </div>
           )}
 
-          {/* Customer & Due Date */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Customer Selection & Due Date */}
+          <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium block mb-1">Customer / Company Name</label>
-              <Input
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="e.g. Acme Innovations"
-                required
-              />
+              <label className="text-xs font-medium block mb-1">Select Registered Customer</label>
+              <select
+                value={selectedCustomerId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedCustomerId(val);
+                  const found = PRESET_CUSTOMERS.find((c) => c.id === val);
+                  if (found) {
+                    setCustomerName(found.name);
+                    setCustomerEmail(found.email);
+                  }
+                }}
+                className="w-full text-sm rounded-md border border-input bg-background px-3 py-2 shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                {PRESET_CUSTOMERS.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.email})
+                  </option>
+                ))}
+              </select>
             </div>
-            <div>
-              <label className="text-xs font-medium block mb-1">Customer Email</label>
-              <Input
-                type="email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                placeholder="billing@acme.com"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium block mb-1">Payment Due Date</label>
-              <Input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                required
-              />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs font-medium block mb-1">Customer / Company Name</label>
+                <Input
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="e.g. Astra Tech Solutions"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium block mb-1">Customer Email</label>
+                <Input
+                  type="email"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  placeholder="billing@astratech.in"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium block mb-1">Payment Due Date</label>
+                <Input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  required
+                />
+              </div>
             </div>
           </div>
 
