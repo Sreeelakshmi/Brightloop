@@ -4,7 +4,9 @@ import { createServerClient } from "@/lib/supabase/server";
 import { getRoleRedirectPath } from "@/lib/auth/session";
 import { UserRole } from "@/types";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
+
+const AUTH_COOKIE_NAME = "brightloop_role";
 
 export interface AuthActionResult {
   success: boolean;
@@ -76,6 +78,19 @@ export async function loginAction(
     role = "customer";
   }
 
+  // Set brightloop_role cookie for middleware and client navigation
+  try {
+    const cookieStore = cookies();
+    cookieStore.set(AUTH_COOKIE_NAME, role, {
+      path: "/",
+      sameSite: "lax",
+      httpOnly: false,
+      maxAge: 60 * 60 * 24 * 7,
+    });
+  } catch (cookieErr) {
+    console.error("Failed to set auth role cookie:", cookieErr);
+  }
+
   // Determine post-login redirect path based on verified database role
   let finalDestination = getRoleRedirectPath(role);
 
@@ -87,22 +102,25 @@ export async function loginAction(
     !redirectTo.startsWith("/signup") &&
     !redirectTo.startsWith("/register")
   ) {
-    // If customer tries to redirect to admin/staff, route to /customer instead
     if (
       role === "customer" &&
-      (redirectTo.startsWith("/admin") ||
-        redirectTo.startsWith("/staff") ||
-        redirectTo.startsWith("/dashboard") ||
-        redirectTo.startsWith("/products") ||
-        redirectTo.startsWith("/plans") ||
-        redirectTo.startsWith("/customers") ||
-        redirectTo.startsWith("/quotations") ||
-        redirectTo.startsWith("/subscriptions") ||
-        redirectTo.startsWith("/invoices") ||
-        redirectTo.startsWith("/payments") ||
-        redirectTo.startsWith("/settings"))
+      !redirectTo.startsWith("/customer") &&
+      !redirectTo.startsWith("/portal")
     ) {
       finalDestination = "/customer";
+    } else if (
+      role === "staff" &&
+      (redirectTo.startsWith("/admin") ||
+        redirectTo.startsWith("/settings") ||
+        redirectTo.startsWith("/customer") ||
+        redirectTo.startsWith("/portal"))
+    ) {
+      finalDestination = "/staff";
+    } else if (
+      role === "admin" &&
+      (redirectTo.startsWith("/customer") || redirectTo.startsWith("/portal"))
+    ) {
+      finalDestination = "/admin";
     } else {
       finalDestination = redirectTo;
     }
@@ -200,6 +218,11 @@ export async function signupAction(
  */
 export async function logoutAction() {
   try {
+    const cookieStore = cookies();
+    cookieStore.set(AUTH_COOKIE_NAME, "", {
+      path: "/",
+      maxAge: 0,
+    });
     const supabase = createServerClient();
     await supabase.auth.signOut();
   } catch (err) {

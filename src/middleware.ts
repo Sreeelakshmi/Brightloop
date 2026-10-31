@@ -12,24 +12,41 @@ export function middleware(request: NextRequest) {
     roleCookie && ["admin", "staff", "customer"].includes(roleCookie)
   );
 
-  const isAdminRoute =
+  const isAdminOnlyRoute =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/settings");
+
+  const isStaffRoute = pathname.startsWith("/staff");
+
+  const isCustomerExclusiveRoute = pathname.startsWith("/customer");
+
+  const isAdminDashboardRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/reports") ||
     pathname.startsWith("/customers") ||
     pathname.startsWith("/subscriptions") ||
     pathname.startsWith("/invoices") ||
-    pathname.startsWith("/payments");
-
-  // CSV export is admin/staff only — block customers explicitly
-  const isExportRoute = pathname.startsWith("/api/reports/export");
+    pathname.startsWith("/payments") ||
+    pathname.startsWith("/products") ||
+    pathname.startsWith("/plans") ||
+    pathname.startsWith("/quotations");
 
   const isPortalRoute = pathname.startsWith("/portal");
+  const isExportRoute = pathname.startsWith("/api/reports/export");
   const isLoginRoute = pathname === "/login";
   const isRootRoute = pathname === "/";
 
-  // 1. Unauthenticated users
+  // 1. Unauthenticated users: redirect to /login with ?redirect=...
   if (!isAuthenticated) {
-    if (isAdminRoute || isPortalRoute || isRootRoute || isExportRoute) {
+    if (
+      isAdminOnlyRoute ||
+      isStaffRoute ||
+      isCustomerExclusiveRoute ||
+      isAdminDashboardRoute ||
+      isPortalRoute ||
+      isRootRoute ||
+      isExportRoute
+    ) {
       const loginUrl = new URL("/login", request.url);
       if (!isRootRoute) {
         loginUrl.searchParams.set("redirect", pathname);
@@ -49,21 +66,39 @@ export function middleware(request: NextRequest) {
   }
 
   // 3. Customer trying to access Admin/Staff routes
-  if (roleCookie === "customer" && isAdminRoute) {
-    return NextResponse.redirect(new URL("/portal", request.url));
+  if (roleCookie === "customer") {
+    if (isAdminDashboardRoute || isAdminOnlyRoute || isStaffRoute) {
+      return NextResponse.redirect(new URL("/portal", request.url));
+    }
+    if (isExportRoute) {
+      return NextResponse.json(
+        { error: "Forbidden: insufficient role" },
+        { status: 403 }
+      );
+    }
   }
 
-  // 4. Customer trying to access the CSV export API route
-  if (roleCookie === "customer" && isExportRoute) {
-    return NextResponse.json(
-      { error: "Forbidden: insufficient role" },
-      { status: 403 }
-    );
+  // 4. Staff route protections
+  if (roleCookie === "staff") {
+    if (isAdminOnlyRoute) {
+      return NextResponse.redirect(new URL("/staff", request.url));
+    }
+    if (isPortalRoute) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    if (isCustomerExclusiveRoute) {
+      return NextResponse.redirect(new URL("/staff", request.url));
+    }
   }
 
-  // 5. Admin or Staff trying to access Customer Portal routes
-  if ((roleCookie === "admin" || roleCookie === "staff") && isPortalRoute) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // 5. Admin route protections
+  if (roleCookie === "admin") {
+    if (isPortalRoute) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    if (isCustomerExclusiveRoute) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
   }
 
   return NextResponse.next();
@@ -72,13 +107,20 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/",
+    "/admin/:path*",
+    "/staff/:path*",
+    "/customer/:path*",
+    "/portal/:path*",
     "/dashboard/:path*",
     "/reports/:path*",
     "/customers/:path*",
     "/subscriptions/:path*",
     "/invoices/:path*",
     "/payments/:path*",
-    "/portal/:path*",
+    "/products/:path*",
+    "/plans/:path*",
+    "/quotations/:path*",
+    "/settings/:path*",
     "/login",
     "/api/reports/export",
   ],
