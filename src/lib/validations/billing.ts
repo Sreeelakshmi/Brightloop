@@ -74,3 +74,27 @@ export const createManualInvoiceSchema = z.object({
 });
 
 export type CreateManualInvoiceSchemaInput = z.infer<typeof createManualInvoiceSchema>;
+
+export const processDemoPaymentSchema = z.object({
+  invoiceId: z.string().min(1, "Invoice ID is required"),
+  customerId: z.string().min(1, "Customer ID is required"),
+  amountRupees: z.number().positive("Payment amount must be greater than zero"),
+  paymentMethod: z.enum([
+    "card",
+    "upi",
+    "net_banking",
+    "debit_card",
+  ]),
+  demoOutcome: z.enum(["success", "failure"]),
+  failureReason: z.string().optional(),
+  simulatedDetails: z
+    .object({
+      upiVpa: z.string().optional(),
+      cardLast4: z.string().optional(),
+      cardBrand: z.string().optional(),
+      bankName: z.string().optional(),
+    })
+    .optional(),
+});
+
+export type ProcessDemoPaymentInput = z.infer<typeof processDemoPaymentSchema>;

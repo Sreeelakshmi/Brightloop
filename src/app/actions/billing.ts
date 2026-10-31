@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { recordPayment } from "@/services/payments";
+import { recordPayment, processDemoPayment } from "@/services/payments";
 import { updateInvoiceStatus, createInvoice } from "@/services/invoices";
 import { createTaxRule } from "@/services/taxes";
 import { createDiscount } from "@/services/discounts";
@@ -11,10 +11,12 @@ import {
   createTaxRuleSchema,
   createDiscountSchema,
   createManualInvoiceSchema,
+  processDemoPaymentSchema,
   RecordPaymentInput,
   CreateTaxRuleInput,
   CreateDiscountInput,
   CreateManualInvoiceSchemaInput,
+  ProcessDemoPaymentInput,
 } from "@/lib/validations/billing";
 import { ExtendedInvoiceStatus } from "@/types";
 import { rupeesToPaise } from "@/lib/billing/math";
@@ -108,5 +110,23 @@ export async function createManualInvoiceAction(input: CreateManualInvoiceSchema
     return { success: true, data: newInvoice };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to create invoice" };
+  }
+}
+
+export async function processDemoPaymentAction(formData: ProcessDemoPaymentInput) {
+  try {
+    const validated = processDemoPaymentSchema.parse(formData);
+    const result = await processDemoPayment(validated);
+
+    if (result.success) {
+      revalidatePath("/invoices");
+      revalidatePath("/payments");
+      revalidatePath(`/invoices/${validated.invoiceId}`);
+      revalidatePath("/dashboard");
+    }
+
+    return { success: result.success, data: result, error: result.error };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to process demo payment" };
   }
 }

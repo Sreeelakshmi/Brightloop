@@ -1,6 +1,6 @@
 import { DetailedPayment, PaymentMethodType } from "@/types";
 import { rupeesToPaise, paiseToRupees, formatINR } from "@/lib/billing/math";
-import { RecordPaymentInput } from "@/lib/validations/billing";
+import { RecordPaymentInput, ProcessDemoPaymentInput } from "@/lib/validations/billing";
 import { getInvoiceById, applyPaymentToInvoice } from "./invoices";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -373,5 +373,110 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{
   return {
     payment: { ...newPayment },
     updatedInvoice,
+  };
+}
+
+export interface ProcessDemoPaymentResult {
+  success: boolean;
+  payment?: DetailedPayment;
+  updatedInvoice?: any;
+  transactionReference: string;
+  error?: string;
+  errorCode?: string;
+  message?: string;
+}
+
+/**
+ * Functional DEMO Payment Gateway Processor
+ * Performs strict server-side validation of invoice ownership, status,
+ * balance, and handles simulated success or simulated failure outcomes.
+ */
+export async function processDemoPayment(
+  input: ProcessDemoPaymentInput
+): Promise<ProcessDemoPaymentResult> {
+  // 1. Verify invoice existence
+  const invoice = await getInvoiceById(input.invoiceId);
+  if (!invoice) {
+    throw new Error(`Invoice with ID ${input.invoiceId} does not exist.`);
+  }
+
+  // 2. Verify invoice status
+  if (invoice.extendedStatus === "cancelled") {
+    throw new Error("Cannot process demo payment against a cancelled invoice.");
+  }
+  if (invoice.extendedStatus === "draft") {
+    throw new Error("Cannot process demo payment against an unconfirmed draft invoice.");
+  }
+  if (invoice.amountDuePaise <= 0 || invoice.extendedStatus === "paid") {
+    throw new Error("This invoice is already fully settled. No balance remaining.");
+  }
+
+  // 3. Verify customer ownership
+  if (input.customerId && invoice.customerId !== input.customerId) {
+    throw new Error("Unauthorized: Customer ID mismatch for this invoice.");
+  }
+
+  // 4. Verify payment amount
+  const paymentPaise = rupeesToPaise(input.amountRupees);
+  if (paymentPaise <= 0) {
+    throw new Error("Payment amount must be greater than zero.");
+  }
+
+  if (paymentPaise > invoice.amountDuePaise) {
+    throw new Error(
+      `Overpayment rejected! Payment of ${formatINR(paymentPaise)} exceeds outstanding balance of ${formatINR(
+        invoice.amountDuePaise
+      )}.`
+    );
+  }
+
+  // 5. Handle Simulated FAILURE outcome
+  if (input.demoOutcome === "failure") {
+    const failureTxRef = `DEMO-FAIL-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const reason =
+      input.failureReason ||
+      "Simulated Bank Decline: Transaction was declined by the simulated card issuer / UPI network.";
+
+    return {
+      success: false,
+      transactionReference: failureTxRef,
+      error: reason,
+      errorCode: "SIMULATED_GATEWAY_DECLINE",
+      message: "The simulated demo transaction failed as requested. Invoice balance was not changed.",
+    };
+  }
+
+  // 6. Handle Simulated SUCCESS outcome
+  const demoTxRef = `DEMO-PAY-${Date.now()}-${Math.floor(100000 + Math.random() * 900000)}`;
+
+  let methodDetailNote = "";
+  if (input.simulatedDetails?.cardLast4) {
+    methodDetailNote = ` (${input.simulatedDetails.cardBrand || "Card"} •••• ${input.simulatedDetails.cardLast4})`;
+  } else if (input.simulatedDetails?.upiVpa) {
+    methodDetailNote = ` (UPI VPA: ${input.simulatedDetails.upiVpa})`;
+  } else if (input.simulatedDetails?.bankName) {
+    methodDetailNote = ` (Bank: ${input.simulatedDetails.bankName})`;
+  }
+
+  const demoNote = `[DEMO PAYMENT GATEWAY] Simulated ${input.paymentMethod.replace("_", " ")}${methodDetailNote}. Test environment only.`;
+
+  // Map debit_card to card in database payment method constraint
+  const dbMethod: PaymentMethodType = input.paymentMethod === "debit_card" ? "card" : input.paymentMethod;
+
+  const recordResult = await recordPayment({
+    invoiceId: invoice.id,
+    customerId: invoice.customerId,
+    amountRupees: input.amountRupees,
+    paymentMethod: dbMethod,
+    transactionReference: demoTxRef,
+    notes: demoNote,
+  });
+
+  return {
+    success: true,
+    payment: recordResult.payment,
+    updatedInvoice: recordResult.updatedInvoice,
+    transactionReference: demoTxRef,
+    message: "Demo payment simulated successfully and recorded in database.",
   };
 }

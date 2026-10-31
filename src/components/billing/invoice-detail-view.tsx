@@ -6,6 +6,7 @@ import { DetailedInvoice, DetailedPayment } from "@/types";
 import { formatINR } from "@/lib/billing/math";
 import { InvoiceStatusBadge, PaymentStatusBadge } from "./status-badge";
 import { RecordPaymentModal } from "./record-payment-modal";
+import { DemoPaymentCheckout } from "./demo-payment-checkout";
 import { updateInvoiceStatusAction } from "@/app/actions/billing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,6 +38,7 @@ interface InvoiceDetailViewProps {
 export function InvoiceDetailView({ invoice, payments }: InvoiceDetailViewProps) {
   const [currentInvoice, setCurrentInvoice] = useState<DetailedInvoice>(invoice);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isDemoCheckoutOpen, setIsDemoCheckoutOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const handleStatusChange = async (status: "confirmed" | "cancelled") => {
@@ -107,14 +109,26 @@ export function InvoiceDetailView({ invoice, payments }: InvoiceDetailViewProps)
           {currentInvoice.amountDuePaise > 0 &&
             currentInvoice.extendedStatus !== "cancelled" &&
             currentInvoice.extendedStatus !== "draft" && (
-              <Button
-                onClick={() => setIsPaymentModalOpen(true)}
-                size="sm"
-                className="text-xs sm:text-sm bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <CreditCard className="w-4 h-4 mr-1.5" />
-                Record Payment
-              </Button>
+              <>
+                <Button
+                  onClick={() => setIsDemoCheckoutOpen(true)}
+                  size="sm"
+                  className="text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center shadow-sm"
+                >
+                  <CreditCard className="w-4 h-4 mr-1.5" />
+                  Pay Now (Demo Gateway)
+                </Button>
+
+                <Button
+                  onClick={() => setIsPaymentModalOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs sm:text-sm"
+                >
+                  <FileCheck className="w-4 h-4 mr-1.5 text-muted-foreground" />
+                  Record Offline
+                </Button>
+              </>
             )}
 
           <Button
@@ -393,13 +407,25 @@ export function InvoiceDetailView({ invoice, payments }: InvoiceDetailViewProps)
         )}
       </div>
 
-      {/* Payment Modal */}
+      {/* Offline Payment Modal */}
       {isPaymentModalOpen && (
         <RecordPaymentModal
           invoice={currentInvoice}
           isOpen={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}
           onSuccess={() => window.location.reload()}
+        />
+      )}
+
+      {/* Functional Demo Payment Gateway Checkout */}
+      {isDemoCheckoutOpen && (
+        <DemoPaymentCheckout
+          invoice={currentInvoice}
+          isOpen={isDemoCheckoutOpen}
+          onClose={() => setIsDemoCheckoutOpen(false)}
+          onPaymentSuccess={() => {
+            window.location.reload();
+          }}
         />
       )}
     </div>

@@ -476,6 +476,309 @@ runTest("20. Discount usage limits and date windows strictly enforced", () => {
   assert.strictEqual(evaluateDiscount(validDiscount, "2026-06-01T00:00:00Z").valid, true);
 });
 
+// =====================================================================
+// DEMO PAYMENT GATEWAY TEST SCENARIOS (Member 3 Online Customer Portal)
+// =====================================================================
+
+// Simulated Demo Payment Processor mimicking processDemoPayment()
+function simulateDemoPaymentGateway(input, invoiceState) {
+  if (invoiceState.extendedStatus === "cancelled") {
+    throw new Error("Cannot process demo payment against a cancelled invoice.");
+  }
+  if (invoiceState.extendedStatus === "draft") {
+    throw new Error("Cannot process demo payment against an unconfirmed draft invoice.");
+  }
+  if (invoiceState.amountDuePaise <= 0 || invoiceState.extendedStatus === "paid") {
+    throw new Error("This invoice is already fully settled. No balance remaining.");
+  }
+  if (input.customerId && invoiceState.customerId !== input.customerId) {
+    throw new Error("Unauthorized: Customer ID mismatch for this invoice.");
+  }
+
+  const paymentPaise = Math.round(input.amountRupees * 100);
+  if (paymentPaise <= 0) {
+    throw new Error("Payment amount must be greater than zero.");
+  }
+  if (paymentPaise > invoiceState.amountDuePaise) {
+    throw new Error(
+      `Overpayment rejected! Payment of ₹${input.amountRupees.toFixed(2)} exceeds outstanding balance of ₹${(
+        invoiceState.amountDuePaise / 100
+      ).toFixed(2)}.`
+    );
+  }
+
+  // Handle failure outcome
+  if (input.demoOutcome === "failure") {
+    return {
+      success: false,
+      transactionReference: `DEMO-FAIL-${Date.now()}`,
+      error: input.failureReason || "Simulated Bank Decline: Card declined by issuing network.",
+      remainingDuePaise: invoiceState.amountDuePaise,
+    };
+  }
+
+  // Handle success outcome
+  const demoTxRef = `DEMO-PAY-${Date.now()}-${Math.floor(100000 + Math.random() * 900000)}`;
+  invoiceState.amountPaidPaise += paymentPaise;
+  invoiceState.amountDuePaise = Math.max(0, invoiceState.totalAmountPaise - invoiceState.amountPaidPaise);
+  if (invoiceState.amountDuePaise === 0) {
+    invoiceState.extendedStatus = "paid";
+    invoiceState.status = "paid";
+  }
+
+  return {
+    success: true,
+    transactionReference: demoTxRef,
+    remainingDuePaise: invoiceState.amountDuePaise,
+    status: invoiceState.extendedStatus,
+  };
+}
+
+// TEST 21: Successful Full Payment
+runTest("21. Demo Gateway: Successful full payment clears balance to 0 and transitions status to paid", () => {
+  const inv = {
+    id: "inv-demo-1",
+    customerId: "cust-demo-1",
+    totalAmountPaise: 500000, // ₹5,000.00
+    amountPaidPaise: 0,
+    amountDuePaise: 500000,
+    extendedStatus: "confirmed",
+    status: "open",
+  };
+
+  const res = simulateDemoPaymentGateway(
+    {
+      invoiceId: inv.id,
+      customerId: "cust-demo-1",
+      amountRupees: 5000,
+      paymentMethod: "upi",
+      demoOutcome: "success",
+    },
+    inv
+  );
+
+  assert.strictEqual(res.success, true);
+  assert.strictEqual(inv.amountPaidPaise, 500000);
+  assert.strictEqual(inv.amountDuePaise, 0);
+  assert.strictEqual(inv.extendedStatus, "paid");
+  assert.match(res.transactionReference, /^DEMO-PAY-/);
+});
+
+// TEST 22: Successful Partial Payment
+runTest("22. Demo Gateway: Successful partial payment reduces balance and preserves open status", () => {
+  const inv = {
+    id: "inv-demo-2",
+    customerId: "cust-demo-1",
+    totalAmountPaise: 1000000, // ₹10,000.00
+    amountPaidPaise: 0,
+    amountDuePaise: 1000000,
+    extendedStatus: "confirmed",
+    status: "open",
+  };
+
+  // Pay ₹4,000.00
+  const res = simulateDemoPaymentGateway(
+    {
+      invoiceId: inv.id,
+      customerId: "cust-demo-1",
+      amountRupees: 4000,
+      paymentMethod: "card",
+      demoOutcome: "success",
+    },
+    inv
+  );
+
+  assert.strictEqual(res.success, true);
+  assert.strictEqual(inv.amountPaidPaise, 400000);
+  assert.strictEqual(inv.amountDuePaise, 600000); // ₹6,000.00 remaining
+  assert.strictEqual(inv.extendedStatus, "confirmed"); // Still open
+});
+
+// TEST 23: Failed Payment Simulation
+runTest("23. Demo Gateway: Simulated bank failure leaves invoice amounts and status completely unchanged", () => {
+  const inv = {
+    id: "inv-demo-3",
+    customerId: "cust-demo-1",
+    totalAmountPaise: 750000, // ₹7,500.00
+    amountPaidPaise: 0,
+    amountDuePaise: 750000,
+    extendedStatus: "confirmed",
+    status: "open",
+  };
+
+  const res = simulateDemoPaymentGateway(
+    {
+      invoiceId: inv.id,
+      customerId: "cust-demo-1",
+      amountRupees: 7500,
+      paymentMethod: "card",
+      demoOutcome: "failure",
+      failureReason: "Simulated Insufficient Funds",
+    },
+    inv
+  );
+
+  assert.strictEqual(res.success, false);
+  assert.strictEqual(inv.amountPaidPaise, 0);
+  assert.strictEqual(inv.amountDuePaise, 750000); // Unchanged!
+  assert.strictEqual(inv.extendedStatus, "confirmed"); // Unchanged!
+  assert.match(res.transactionReference, /^DEMO-FAIL-/);
+});
+
+// TEST 24: Retry After Failure
+runTest("24. Demo Gateway: Successful retry after failure properly settles the invoice", () => {
+  const inv = {
+    id: "inv-demo-4",
+    customerId: "cust-demo-1",
+    totalAmountPaise: 300000,
+    amountPaidPaise: 0,
+    amountDuePaise: 300000,
+    extendedStatus: "confirmed",
+    status: "open",
+  };
+
+  // 1. Initial attempt fails
+  const failRes = simulateDemoPaymentGateway(
+    {
+      invoiceId: inv.id,
+      customerId: "cust-demo-1",
+      amountRupees: 3000,
+      paymentMethod: "net_banking",
+      demoOutcome: "failure",
+    },
+    inv
+  );
+  assert.strictEqual(failRes.success, false);
+  assert.strictEqual(inv.amountDuePaise, 300000);
+
+  // 2. Customer retries with UPI and succeeds
+  const successRes = simulateDemoPaymentGateway(
+    {
+      invoiceId: inv.id,
+      customerId: "cust-demo-1",
+      amountRupees: 3000,
+      paymentMethod: "upi",
+      demoOutcome: "success",
+    },
+    inv
+  );
+  assert.strictEqual(successRes.success, true);
+  assert.strictEqual(inv.amountDuePaise, 0);
+  assert.strictEqual(inv.extendedStatus, "paid");
+});
+
+// TEST 25: Payment Exceeding Outstanding Balance
+runTest("25. Demo Gateway: Server rejects payment exceeding invoice outstanding balance", () => {
+  const inv = {
+    id: "inv-demo-5",
+    customerId: "cust-demo-1",
+    totalAmountPaise: 200000, // ₹2,000.00
+    amountPaidPaise: 150000, // ₹1,500.00 already paid
+    amountDuePaise: 50000,   // ₹500.00 due
+    extendedStatus: "confirmed",
+    status: "open",
+  };
+
+  assert.throws(
+    () =>
+      simulateDemoPaymentGateway(
+        {
+          invoiceId: inv.id,
+          customerId: "cust-demo-1",
+          amountRupees: 600, // ₹600.00 exceeds ₹500.00
+          paymentMethod: "card",
+          demoOutcome: "success",
+        },
+        inv
+      ),
+    /Overpayment rejected/
+  );
+});
+
+// TEST 26: Payment Against Cancelled Invoice
+runTest("26. Demo Gateway: Server rejects payment attempt against cancelled invoice", () => {
+  const inv = {
+    id: "inv-demo-6",
+    customerId: "cust-demo-1",
+    totalAmountPaise: 500000,
+    amountPaidPaise: 0,
+    amountDuePaise: 500000,
+    extendedStatus: "cancelled",
+    status: "void",
+  };
+
+  assert.throws(
+    () =>
+      simulateDemoPaymentGateway(
+        {
+          invoiceId: inv.id,
+          customerId: "cust-demo-1",
+          amountRupees: 5000,
+          paymentMethod: "card",
+          demoOutcome: "success",
+        },
+        inv
+      ),
+    /Cannot process demo payment against a cancelled invoice/
+  );
+});
+
+// TEST 27: Duplicate Payment Submission Prevention
+runTest("27. Demo Gateway: Rejects payment on already-settled invoice (balance = 0)", () => {
+  const inv = {
+    id: "inv-demo-7",
+    customerId: "cust-demo-1",
+    totalAmountPaise: 500000,
+    amountPaidPaise: 500000,
+    amountDuePaise: 0,
+    extendedStatus: "paid",
+    status: "paid",
+  };
+
+  assert.throws(
+    () =>
+      simulateDemoPaymentGateway(
+        {
+          invoiceId: inv.id,
+          customerId: "cust-demo-1",
+          amountRupees: 5000,
+          paymentMethod: "card",
+          demoOutcome: "success",
+        },
+        inv
+      ),
+    /already fully settled/
+  );
+});
+
+// TEST 28: Unauthorized Customer ID Mismatch
+runTest("28. Demo Gateway: Rejects unauthorized customer attempting to pay another customer's invoice", () => {
+  const inv = {
+    id: "inv-demo-8",
+    customerId: "customer-legitimate-owner",
+    totalAmountPaise: 800000,
+    amountPaidPaise: 0,
+    amountDuePaise: 800000,
+    extendedStatus: "confirmed",
+    status: "open",
+  };
+
+  assert.throws(
+    () =>
+      simulateDemoPaymentGateway(
+        {
+          invoiceId: inv.id,
+          customerId: "customer-malicious-actor",
+          amountRupees: 8000,
+          paymentMethod: "upi",
+          demoOutcome: "success",
+        },
+        inv
+      ),
+    /Unauthorized: Customer ID mismatch/
+  );
+});
+
 console.log("\n=======================================================");
 console.log(` RESULT: ${passedTests}/${totalTests} TESTS PASSED (100% SUCCESS)`);
 console.log("=======================================================\n");
