@@ -3,13 +3,23 @@ import type { Config } from "tailwindcss";
 const config: Config = {
   darkMode: ["class"],
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
+        telemetry: {
+          bg: "#E4EEE4",
+          card: "#FFFFFF",
+          border: "#B9CBB9",
+          panel: "#D3E3D3",
+          charcoal: "#2B302B",
+          secondary: "#8A968A",
+          orange: "#F57B4A",
+        },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -45,13 +55,25 @@ const config: Config = {
         ring: "hsl(var(--ring))",
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        none: "0px",
+        sm: "2px",
+        DEFAULT: "3px",
+        md: "4px",
+        lg: "6px",
+      },
+      borderWidth: {
+        DEFAULT: "1px",
+        "1.5": "1.5px",
+        "2": "2px",
+        "3": "3px",
+      },
+      fontFamily: {
+        sans: ["var(--font-inter-tight)", "Inter", "system-ui", "sans-serif"],
+        mono: ["var(--font-space-grotesk)", "monospace"],
       },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 };
 
 export default config;

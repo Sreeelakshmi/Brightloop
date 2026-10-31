@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Telemetry Pale Sage #E4EEE4 */
+    --background: 120 22% 91%;
+    /* Soft Charcoal #2B302B */
+    --foreground: 120 5.5% 17.8%;
+
+    /* Pure White Cards #FFFFFF */
+    --card: 0 0% 100%;
+    --card-foreground: 120 5.5% 17.8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 120 5.5% 17.8%;
+
+    /* Primary Charcoal #2B302B */
+    --primary: 120 5.5% 17.8%;
+    --primary-foreground: 120 22% 91%;
+
+    /* Secondary Light Sage #D3E3D3 */
+    --secondary: 120 22% 86%;
+    --secondary-foreground: 120 5.5% 17.8%;
+
+    /* Muted Grey-Green #8A968A */
+    --muted: 120 6.5% 56.5%;
+    --muted-foreground: 120 6% 40%;
+
+    /* Single Accent Orange #F57B4A */
+    --accent: 17 90% 63%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 17 90% 63%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Card & Panel Border #B9CBB9 */
+    --border: 120 15% 76%;
+    --input: 120 15% 76%;
+    --ring: 17 90% 63%;
+
+    --radius: 3px;
+  }
+
+  body {
+    background-color: #E4EEE4;
+    color: #2B302B;
+    font-feature-settings: "tnum" 1, "cv02" 1, "cv03" 1, "cv04" 1;
+    min-height: 100vh;
+    background-image: 
+      linear-gradient(45deg, rgba(43, 48, 43, 0.04) 1px, transparent 1px),
+      linear-gradient(-45deg, rgba(43, 48, 43, 0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 0 0, 12px 12px;
+  }
+
+  * {
+    border-color: #B9CBB9;
+  }
+}
+
+/* Telemetry typography and UI helper classes */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.telemetry-card {
+  background-color: #FFFFFF;
+  border: 1.5px solid #B9CBB9;
+  border-radius: 3px;
+}
+
+.telemetry-card-orange {
+  border-top: 4px solid #F57B4A;
+}
+
+.telemetry-card-charcoal {
+  border-top: 4px solid #2B302B;
+}
+
+.telemetry-card-sage {
+  border-top: 4px solid #8A968A;
+}
+
