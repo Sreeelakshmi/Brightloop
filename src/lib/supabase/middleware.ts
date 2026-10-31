@@ -109,19 +109,23 @@ export async function updateSession(request: NextRequest) {
 
   // 2. Authenticated users
   if (user) {
-    // Resolve user role: check public.profiles or fallback to user_metadata
-    let role = (user.user_metadata?.role as string) || "customer";
+    // SECURITY: Resolve user role strictly from public.profiles table.
+    // NEVER trust client user_metadata for role authorization.
+    let role = "customer";
     try {
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", user.id)
         .single();
-      if (profile?.role) {
+      if (
+        profile?.role &&
+        ["admin", "staff", "customer"].includes(profile.role)
+      ) {
         role = profile.role;
       }
     } catch {
-      // Use fallback metadata role
+      role = "customer";
     }
 
     const defaultRoleHome =
@@ -159,7 +163,7 @@ export async function updateSession(request: NextRequest) {
     }
 
     // C. Staff cannot access admin-only pages
-    if (role === "staff" && pathname.startsWith("/admin")) {
+    if (role === "staff" && (pathname.startsWith("/admin") || pathname.startsWith("/settings"))) {
       return createRedirectWithCookies(
         new URL("/staff", request.url),
         request,

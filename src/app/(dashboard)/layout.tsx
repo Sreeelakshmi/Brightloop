@@ -1,14 +1,19 @@
 import React from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Navbar } from "@/components/layout/navbar";
+import { requireRole } from "@/lib/auth/session";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Server-side RBAC guard: Admin and Staff only
+  // Unauthenticated users are redirected to /login; customers are redirected to /customer
+  await requireRole(["admin", "staff"]);
+
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-brightloop-bg">
       {/* Reusable Sidebar Navigation */}
       <Sidebar />
 
@@ -22,4 +27,3 @@ export default function DashboardLayout({
     </div>
   );
 }
-

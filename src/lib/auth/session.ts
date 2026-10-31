@@ -50,6 +50,12 @@ export async function getCurrentUser() {
 
 /**
  * Retrieves the currently authenticated user and their profile from `public.profiles`.
+ *
+ * SECURITY REQUIREMENT:
+ * Role authorization is strictly resolved from `public.profiles.role` in PostgreSQL.
+ * User-editable `raw_user_meta_data` is NEVER trusted for role authorization to prevent
+ * privilege escalation. Any account without an explicit admin or staff profile role defaults
+ * strictly to "customer".
  */
 export async function getCurrentProfile(): Promise<{
   user: any;
@@ -72,16 +78,24 @@ export async function getCurrentProfile(): Promise<{
       .eq("id", user.id)
       .single();
 
-    const fallbackRole: UserRole =
-      (user.user_metadata?.role as UserRole) || "customer";
+    // STRICT: Only trust the role recorded in public.profiles
+    let trustedRole: UserRole = "customer";
+    if (
+      dbProfile?.role &&
+      (dbProfile.role === "admin" ||
+        dbProfile.role === "staff" ||
+        dbProfile.role === "customer")
+    ) {
+      trustedRole = dbProfile.role as UserRole;
+    }
 
     if (error || !dbProfile) {
-      // Fallback profile using user metadata if profile row is still syncing
+      // Fallback profile if profile row is still syncing; role is STRICTLY "customer"
       const fallbackProfile: Profile = {
         id: user.id,
         email: user.email || "",
         fullName: (user.user_metadata?.full_name as string) || null,
-        role: fallbackRole,
+        role: "customer",
         createdAt: user.created_at,
       };
       return { user, profile: fallbackProfile };
@@ -97,7 +111,7 @@ export async function getCurrentProfile(): Promise<{
         null,
       avatarUrl: dbProfile.avatar_url || null,
       phone: dbProfile.phone || null,
-      role: (dbProfile.role as UserRole) || fallbackRole,
+      role: trustedRole,
       billingAddress: dbProfile.billing_address || {},
       metadata: dbProfile.metadata || {},
       createdAt: dbProfile.created_at || user.created_at,
@@ -106,15 +120,13 @@ export async function getCurrentProfile(): Promise<{
 
     return { user, profile: mappedProfile };
   } catch {
-    const fallbackRole: UserRole =
-      (user.user_metadata?.role as UserRole) || "customer";
     return {
       user,
       profile: {
         id: user.id,
         email: user.email || "",
         fullName: (user.user_metadata?.full_name as string) || null,
-        role: fallbackRole,
+        role: "customer",
         createdAt: user.created_at,
       },
     };
@@ -140,7 +152,8 @@ export async function requireAuth(redirectTo?: string) {
 
 /**
  * Enforces role-based authorization on server components / pages.
- * If user lacks required role, redirects to their authorized role dashboard.
+ * If user lacks required role, redirects to their authorized role destination.
+ * Customers attempting to access admin/staff routes are redirected to `/customer`.
  */
 export async function requireRole(
   allowedRoles: UserRole[],

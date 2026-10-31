@@ -16,6 +16,7 @@ export interface AuthActionResult {
 
 /**
  * Server action to log in with email and password.
+ * Resolves role strictly from `public.profiles` in PostgreSQL.
  */
 export async function loginAction(
   prevState: AuthActionResult | null,
@@ -54,7 +55,7 @@ export async function loginAction(
     return { success: false, error: "Failed to authenticate user credentials." };
   }
 
-  // Fetch user role from public.profiles
+  // Fetch trusted user role strictly from public.profiles table
   let role: UserRole = "customer";
   try {
     const { data: profile } = await supabase
@@ -63,16 +64,19 @@ export async function loginAction(
       .eq("id", data.user.id)
       .single();
 
-    if (profile?.role) {
+    if (
+      profile?.role &&
+      (profile.role === "admin" ||
+        profile.role === "staff" ||
+        profile.role === "customer")
+    ) {
       role = profile.role as UserRole;
-    } else if (data.user.user_metadata?.role) {
-      role = data.user.user_metadata.role as UserRole;
     }
   } catch {
-    role = (data.user.user_metadata?.role as UserRole) || "customer";
+    role = "customer";
   }
 
-  // Determine post-login redirect path
+  // Determine post-login redirect path based on verified database role
   let finalDestination = getRoleRedirectPath(role);
 
   // If a safe redirectTo was provided (and not an auth page)

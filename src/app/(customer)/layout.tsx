@@ -2,12 +2,16 @@ import React from "react";
 import Link from "next/link";
 import { Repeat, ArrowLeft, LogOut } from "lucide-react";
 import { logoutAction } from "@/lib/auth/actions";
+import { requireAuth } from "@/lib/auth/session";
 
-export default function CustomerPortalLayout({
+export default async function CustomerPortalLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Server-side authentication guard for customer area
+  await requireAuth();
+
   return (
     <div className="min-h-screen bg-brightloop-bg flex flex-col font-sans">
       <header className="h-16 border-b border-border bg-white px-6 flex items-center justify-between sticky top-0 z-30 shadow-subtle">
