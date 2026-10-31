@@ -47,9 +47,9 @@ export default async function PortalSubscriptionsPage({
       {/* Status Filter */}
       <div className="flex items-center justify-between">
         <SubscriptionsFilter currentStatus={selectedStatus} />
-        <span className="text-xs font-mono text-[#8A968A]">
+        <span className="text-xs font-mono text-[#8C9B8E]">
           Showing{" "}
-          <strong className="text-[#2B302B] font-mono">
+          <strong className="text-[#1F2622] font-mono">
             {filteredSubscriptions.length}
           </strong>{" "}
           of {allSubscriptions.length}

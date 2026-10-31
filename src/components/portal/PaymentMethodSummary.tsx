@@ -17,20 +17,20 @@ const METHOD_CONFIG: Record<
 > = {
   direct_debit: {
     label: "DIRECT DEBIT",
-    color: "#2B302B",
-    bgClass: "bg-[#2B302B]",
+    color: "#1F2622",
+    bgClass: "bg-[#1F2622]",
   },
   credit_card: {
     label: "CREDIT CARD",
-    color: "#8A968A",
-    bgClass: "bg-[#8A968A]",
+    color: "#8C9B8E",
+    bgClass: "bg-[#8C9B8E]",
   },
   wire_transfer: {
     label: "WIRE TRANSFER",
-    color: "#B9CBB9",
-    bgClass: "bg-[#B9CBB9]",
+    color: "#D5DDD2",
+    bgClass: "bg-[#D5DDD2]",
   },
-  upi: { label: "UPI", color: "#F57B4A", bgClass: "bg-[#F57B4A]" },
+  upi: { label: "UPI", color: "#F27B4B", bgClass: "bg-[#F27B4B]" },
 };
 
 interface PaymentMethodSummaryProps {
@@ -80,21 +80,21 @@ export function PaymentMethodSummary({
   return (
     <div
       className={cn(
-        "bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] p-4",
+        "bg-white border border-[#D5DDD2] rounded-xl p-4",
         className
       )}
     >
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-[#2B302B] font-mono">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-[#1F2622] font-mono">
           PAYMENT METHOD BREAKDOWN
         </span>
-        <span className="text-xs font-semibold text-[#2B302B] tabular-nums font-mono">
+        <span className="text-xs font-semibold text-[#1F2622] tabular-nums font-mono">
           {formatMoney(grandTotal)} TOTAL
         </span>
       </div>
 
       {/* Segmented bar */}
-      <div className="w-full h-3 rounded-[2px] overflow-hidden flex mb-3 border border-[#B9CBB9]">
+      <div className="w-full h-3 rounded-lg overflow-hidden flex mb-3 border border-[#D5DDD2]">
         {segments.map((seg) => {
           const pct = (seg.amount / grandTotal) * 100;
           return (
@@ -118,13 +118,13 @@ export function PaymentMethodSummary({
                 className="w-2.5 h-2.5 rounded-[1px] shrink-0"
                 style={{ backgroundColor: seg.color }}
               />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A968A] font-mono">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C9B8E] font-mono">
                 {seg.label}
               </span>
-              <span className="text-[10px] font-semibold text-[#2B302B] tabular-nums font-mono">
+              <span className="text-[10px] font-semibold text-[#1F2622] tabular-nums font-mono">
                 {formatMoney(seg.amount)}
               </span>
-              <span className="text-[10px] text-[#8A968A] font-mono">
+              <span className="text-[10px] text-[#8C9B8E] font-mono">
                 ({pct}%)
               </span>
             </div>

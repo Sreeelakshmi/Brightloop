@@ -14,7 +14,7 @@ export async function OverdueSection({ filters, page, sort }: OverdueSectionProp
   return (
     <div className="space-y-3">
       {/* Section label */}
-      <div className="text-[10px] font-bold uppercase tracking-widest text-[#2B302B] font-mono">
+      <div className="text-[10px] font-bold uppercase tracking-widest text-[#1F2622] font-mono">
         Overdue Invoices
       </div>
       <OverdueTable

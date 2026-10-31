@@ -51,20 +51,20 @@ export function SubscriptionActionButtons({
   };
 
   return (
-    <div className="bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] p-5 shadow-none space-y-4">
+    <div className="bg-white border border-[#D5DDD2] rounded-xl p-5 shadow-none space-y-4">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#2B302B] text-white text-xs px-4 py-3 rounded-[3px] font-mono shadow-xl border border-[#8A968A]/40 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
-          <CheckCircle2 className="w-4 h-4 text-[#F57B4A]" />
+        <div className="fixed bottom-6 right-6 z-50 bg-[#1F2622] text-white text-xs px-4 py-3 rounded-xl font-mono shadow-xl border border-[#8C9B8E]/40 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+          <CheckCircle2 className="w-4 h-4 text-[#F27B4B]" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      <div className="flex items-center justify-between pb-2 border-b border-[#B9CBB9]">
-        <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8A968A]">
+      <div className="flex items-center justify-between pb-2 border-b border-[#D5DDD2]">
+        <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8C9B8E]">
           CONTRACT ACTIONS // PERMITTED OPERATIONS
         </div>
-        <span className="text-[10px] font-mono text-[#8A968A]">
+        <span className="text-[10px] font-mono text-[#8C9B8E]">
           Plan: {plan?.name || "Standard Tier"}
         </span>
       </div>
@@ -76,17 +76,17 @@ export function SubscriptionActionButtons({
             type="button"
             disabled={!isRenewable}
             onClick={handleRenew}
-            className={`h-9 px-4 text-xs font-mono font-bold uppercase tracking-wider gap-1.5 rounded-[2px] transition-all ${
+            className={`h-9 px-4 text-xs font-mono font-bold uppercase tracking-wider gap-1.5 rounded-lg transition-all ${
               isRenewable
-                ? "bg-[#F57B4A] hover:bg-[#e06b3c] text-white border-none shadow-none"
-                : "bg-[#D3E3D3]/40 text-[#8A968A] cursor-not-allowed border border-[#B9CBB9]"
+                ? "bg-[#F27B4B] hover:bg-[#e06b3c] text-white border-none shadow-none"
+                : "bg-[#DDE5DB]/40 text-[#8C9B8E] cursor-not-allowed border border-[#D5DDD2]"
             }`}
           >
             <RotateCw className="w-3.5 h-3.5" />
             Renew Subscription
           </Button>
           {!isRenewable && (
-            <span className="text-[10px] font-mono text-[#8A968A]">
+            <span className="text-[10px] font-mono text-[#8C9B8E]">
               Manual renewal unavailable on this plan
             </span>
           )}
@@ -99,17 +99,17 @@ export function SubscriptionActionButtons({
             disabled={!isPausable}
             onClick={() => setPauseDialogOpen(true)}
             variant="outline"
-            className={`h-9 px-4 text-xs font-mono font-bold uppercase tracking-wider gap-1.5 rounded-[2px] border-[1.5px] ${
+            className={`h-9 px-4 text-xs font-mono font-bold uppercase tracking-wider gap-1.5 rounded-lg border ${
               isPausable
-                ? "border-[#B9CBB9] text-[#2B302B] hover:bg-[#D3E3D3]/50 hover:border-[#2B302B]"
-                : "border-[#B9CBB9]/60 text-[#8A968A] cursor-not-allowed bg-[#D3E3D3]/20"
+                ? "border-[#D5DDD2] text-[#1F2622] hover:bg-[#DDE5DB]/50 hover:border-[#1F2622]"
+                : "border-[#D5DDD2]/60 text-[#8C9B8E] cursor-not-allowed bg-[#DDE5DB]/20"
             }`}
           >
             <PauseCircle className="w-3.5 h-3.5" />
             Pause Subscription
           </Button>
           {!isPausable && (
-            <span className="text-[10px] font-mono text-[#8A968A]">
+            <span className="text-[10px] font-mono text-[#8C9B8E]">
               Pause not permitted on this plan tier
             </span>
           )}
@@ -122,17 +122,17 @@ export function SubscriptionActionButtons({
             disabled={!isClosable}
             onClick={() => setCloseDialogOpen(true)}
             variant="outline"
-            className={`h-9 px-4 text-xs font-mono font-bold uppercase tracking-wider gap-1.5 rounded-[2px] border-[1.5px] ${
+            className={`h-9 px-4 text-xs font-mono font-bold uppercase tracking-wider gap-1.5 rounded-lg border ${
               isClosable
-                ? "border-[#B9CBB9] text-[#2B302B] hover:text-[#F57B4A] hover:border-[#F57B4A] hover:bg-[#F57B4A]/10"
-                : "border-[#B9CBB9]/60 text-[#8A968A] cursor-not-allowed bg-[#D3E3D3]/20"
+                ? "border-[#D5DDD2] text-[#1F2622] hover:text-[#F27B4B] hover:border-[#F27B4B] hover:bg-[#F27B4B]/10"
+                : "border-[#D5DDD2]/60 text-[#8C9B8E] cursor-not-allowed bg-[#DDE5DB]/20"
             }`}
           >
             <XCircle className="w-3.5 h-3.5" />
             Close Subscription
           </Button>
           {!isClosable && (
-            <span className="text-[10px] font-mono text-[#8A968A]">
+            <span className="text-[10px] font-mono text-[#8C9B8E]">
               Contract term requires completion
             </span>
           )}

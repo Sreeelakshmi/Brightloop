@@ -63,7 +63,7 @@ export default function ReportsPage({ searchParams }: ReportsPageProps) {
       {/* Filter Bar with Date Preset, Customer, Plan, Status, Method, CSV Export */}
       <Suspense
         fallback={
-          <div className="h-12 bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] animate-pulse" />
+          <div className="h-12 bg-white border border-[#D5DDD2] rounded-xl animate-pulse" />
         }
       >
         <ReportsFilterBar tab={activeTab} />

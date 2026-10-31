@@ -63,7 +63,7 @@ export default function DashboardPage({ searchParams }: DashboardPageProps) {
       />
 
       {/* Filter Bar — client component, reads/writes URL params */}
-      <Suspense fallback={<div className="h-12 bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] animate-pulse" />}>
+      <Suspense fallback={<div className="h-12 bg-white border border-[#D5DDD2] rounded-xl animate-pulse" />}>
         <DashboardFilterBar />
       </Suspense>
 

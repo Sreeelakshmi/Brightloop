@@ -22,16 +22,16 @@ export function SubscriptionStepper({ currentStatus }: SubscriptionStepperProps)
   const normalizedIndex = currentIndex >= 0 ? currentIndex : 3; // Default to active if unknown
 
   return (
-    <div className="bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] p-5 shadow-none">
-      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8A968A] mb-4">
+    <div className="bg-white border border-[#D5DDD2] rounded-xl p-5 shadow-none">
+      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8C9B8E] mb-4">
         LIFECYCLE STATUS // STEPPER
       </div>
 
       <div className="relative flex items-center justify-between">
         {/* Connecting line */}
-        <div className="absolute left-6 right-6 top-[15px] h-[1.5px] bg-[#B9CBB9] -z-0" />
+        <div className="absolute left-6 right-6 top-[15px] h-[1.5px] bg-[#D5DDD2] -z-0" />
         <div
-          className="absolute left-6 top-[15px] h-[1.5px] bg-[#2B302B] transition-all -z-0"
+          className="absolute left-6 top-[15px] h-[1.5px] bg-[#1F2622] transition-all -z-0"
           style={{
             width: `${(normalizedIndex / (STEPS.length - 1)) * 100}%`,
           }}
@@ -58,9 +58,9 @@ export function SubscriptionStepper({ currentStatus }: SubscriptionStepperProps)
                   viewBox="0 0 24 24"
                   className={cn(
                     "w-8 h-8 transition-colors",
-                    isCompleted && "fill-[#2B302B] stroke-[#2B302B]",
-                    isCurrent && "fill-[#F57B4A] stroke-[#F57B4A]",
-                    isFuture && "fill-white stroke-[#B9CBB9]"
+                    isCompleted && "fill-[#1F2622] stroke-[#1F2622]",
+                    isCurrent && "fill-[#F27B4B] stroke-[#F27B4B]",
+                    isFuture && "fill-white stroke-[#D5DDD2]"
                   )}
                   strokeWidth="1.5"
                 >
@@ -75,7 +75,7 @@ export function SubscriptionStepper({ currentStatus }: SubscriptionStepperProps)
                   ) : isCurrent ? (
                     <span className="w-2 h-2 rounded-full bg-white" />
                   ) : (
-                    <span className="text-[#8A968A] text-[10px]">{idx + 1}</span>
+                    <span className="text-[#8C9B8E] text-[10px]">{idx + 1}</span>
                   )}
                 </div>
               </div>
@@ -85,10 +85,10 @@ export function SubscriptionStepper({ currentStatus }: SubscriptionStepperProps)
                 className={cn(
                   "text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider mt-2 transition-colors",
                   isCurrent
-                    ? "text-[#F57B4A]"
+                    ? "text-[#F27B4B]"
                     : isCompleted
-                    ? "text-[#2B302B]"
-                    : "text-[#8A968A]"
+                    ? "text-[#1F2622]"
+                    : "text-[#8C9B8E]"
                 )}
               >
                 {step.label}

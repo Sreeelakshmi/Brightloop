@@ -66,10 +66,10 @@ export function InvoiceFilters() {
             type="button"
             onClick={() => setStatus(opt.value)}
             className={cn(
-              "h-7 px-3 text-[10px] font-bold uppercase tracking-widest rounded-[2px] border transition-colors font-mono",
+              "h-7 px-3 text-[10px] font-bold uppercase tracking-widest rounded-lg border transition-colors font-mono",
               status === opt.value && !overdueOnly
-                ? "bg-[#2B302B] text-white border-[#2B302B]"
-                : "bg-white text-[#2B302B] border-[#B9CBB9] hover:bg-[#D3E3D3]/60"
+                ? "bg-[#1F2622] text-white border-[#1F2622]"
+                : "bg-white text-[#1F2622] border-[#D5DDD2] hover:bg-[#DDE5DB]/60"
             )}
           >
             {opt.label}
@@ -78,23 +78,23 @@ export function InvoiceFilters() {
       </div>
 
       {/* Divider */}
-      <div className="w-px h-5 bg-[#B9CBB9] hidden sm:block" />
+      <div className="w-px h-5 bg-[#D5DDD2] hidden sm:block" />
 
       {/* Overdue toggle */}
       <button
         type="button"
         onClick={toggleOverdue}
         className={cn(
-          "h-7 px-3 text-[10px] font-bold uppercase tracking-widest rounded-[2px] border transition-colors font-mono flex items-center gap-1.5",
+          "h-7 px-3 text-[10px] font-bold uppercase tracking-widest rounded-lg border transition-colors font-mono flex items-center gap-1.5",
           overdueOnly
-            ? "bg-[#F57B4A] text-white border-[#F57B4A]"
-            : "bg-white text-[#F57B4A] border-[#F57B4A]/50 hover:bg-[#F57B4A]/10"
+            ? "bg-[#F27B4B] text-white border-[#F27B4B]"
+            : "bg-white text-[#F27B4B] border-[#F27B4B]/50 hover:bg-[#F27B4B]/10"
         )}
       >
         <span
           className={cn(
             "w-1.5 h-1.5 rounded-full",
-            overdueOnly ? "bg-white" : "bg-[#F57B4A]"
+            overdueOnly ? "bg-white" : "bg-[#F27B4B]"
           )}
         />
         OVERDUE ONLY

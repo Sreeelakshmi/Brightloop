@@ -19,7 +19,7 @@ export interface ConfirmDialogProps {
 
 /**
  * ConfirmDialog Component
- * Telemetry-styled modal confirmation dialog for sensitive actions (e.g. reminders, status changes).
+ * Modal confirmation dialog for sensitive actions styled with Brightloop palette.
  */
 export function ConfirmDialog({
   open,
@@ -38,26 +38,26 @@ export function ConfirmDialog({
       {trigger && <DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger>}
       <DialogPrimitive.Portal>
         {/* Backdrop */}
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[#2B302B]/40 backdrop-blur-[1px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[#1F2622]/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
 
         {/* Modal Window */}
-        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] p-6 shadow-none duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] bg-white border border-[#D5DDD2] rounded-xl p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
           {/* Header Bar */}
           <div className="flex items-start justify-between gap-3 mb-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <div
                 className={cn(
-                  "w-7 h-7 rounded-[2px] flex items-center justify-center text-white shrink-0",
-                  variant === "orange" ? "bg-[#F57B4A]" : "bg-[#2B302B]"
+                  "w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0",
+                  variant === "orange" ? "bg-[#F27B4B]" : "bg-[#1F2622]"
                 )}
               >
                 <AlertCircle className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#8A968A]">
-                  SYSTEM_VERIFICATION //
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C9B8E] block">
+                  ACTION REQUIRED
                 </span>
-                <DialogPrimitive.Title className="text-base font-extrabold uppercase tracking-tight text-[#2B302B]">
+                <DialogPrimitive.Title className="text-base font-bold text-[#1F2622]">
                   {title}
                 </DialogPrimitive.Title>
               </div>
@@ -66,7 +66,7 @@ export function ConfirmDialog({
             <DialogPrimitive.Close asChild>
               <button
                 type="button"
-                className="text-[#8A968A] hover:text-[#2B302B] p-1 rounded-[2px] hover:bg-[#D3E3D3]/60 transition-colors"
+                className="text-[#8C9B8E] hover:text-[#1F2622] p-1.5 rounded-lg hover:bg-[#EBF1EA] transition-colors"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
@@ -75,18 +75,18 @@ export function ConfirmDialog({
           </div>
 
           {/* Description */}
-          <DialogPrimitive.Description className="text-xs text-[#8A968A] leading-relaxed mb-6">
+          <DialogPrimitive.Description className="text-xs text-[#8C9B8E] leading-relaxed mb-6">
             {description}
           </DialogPrimitive.Description>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#B9CBB9]">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#D5DDD2]">
             <DialogPrimitive.Close asChild>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onCancel}
-                className="text-xs"
+                className="text-xs border-[#D5DDD2] text-[#1F2622] hover:bg-[#EBF1EA]"
               >
                 {cancelLabel}
               </Button>
@@ -108,4 +108,3 @@ export function ConfirmDialog({
     </DialogPrimitive.Root>
   );
 }
-

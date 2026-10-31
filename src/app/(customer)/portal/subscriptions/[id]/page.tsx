@@ -43,7 +43,7 @@ export default async function SubscriptionDetailPage({
       <div>
         <Link
           href="/portal/subscriptions"
-          className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-[#8A968A] hover:text-[#2B302B] transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-[#8C9B8E] hover:text-[#1F2622] transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Back to My Subscriptions
@@ -51,21 +51,21 @@ export default async function SubscriptionDetailPage({
       </div>
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b-[1.5px] border-[#B9CBB9]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b-[1.5px] border-[#D5DDD2]">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-[#2B302B] font-mono">
+            <h1 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-[#1F2622] font-mono">
               {subscription.subscriptionNumber || subscription.number || subscription.id}
             </h1>
             <StatusBadge status={subscription.status || "draft"} />
           </div>
-          <p className="text-xs font-mono text-[#8A968A] mt-1">
+          <p className="text-xs font-mono text-[#8C9B8E] mt-1">
             Plan: {subscription.plan?.name || "Enterprise Tier"} • Customer: {subscription.customer?.company || "Account"}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A968A]">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8C9B8E]">
             LOG: {logDate}
           </span>
         </div>

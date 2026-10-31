@@ -4,149 +4,135 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/ui-shared/Logo";
 import {
-  LayoutDashboard,
+  Home,
+  BarChart2,
+  Users,
+  Inbox,
+  FileText,
+  CreditCard,
+  Menu,
   Package,
   Layers,
-  Users,
-  UserCheck,
   FileSpreadsheet,
-  Repeat,
-  Receipt,
-  CreditCard,
+  UserCheck,
   Settings,
-  ShieldCheck,
   ExternalLink,
-  Shield,
+  ShieldCheck,
 } from "lucide-react";
 
-interface NavLinkItem {
+interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
-  member: string;
 }
 
-const mainNavItems: NavLinkItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, member: "M4" },
-  { name: "Admin Console", href: "/admin", icon: Shield, member: "M1" },
-  { name: "Products", href: "/products", icon: Package, member: "M1" },
-  { name: "Plans", href: "/plans", icon: Layers, member: "M1" },
-  { name: "Customers", href: "/customers", icon: Users, member: "M1" },
-  { name: "Staff", href: "/staff", icon: UserCheck, member: "M1" },
+const primaryNav: NavItem[] = [
+  { name: "Dashboard", href: "/dashboard", icon: Home },
+  { name: "Reports", href: "/reports", icon: BarChart2 },
+  { name: "Customers", href: "/customers", icon: Users },
+  { name: "Subscriptions", href: "/subscriptions", icon: Inbox },
+  { name: "Invoices", href: "/invoices", icon: FileText },
+  { name: "Payments", href: "/payments", icon: CreditCard },
 ];
 
-const subscriptionNavItems: NavLinkItem[] = [
-  { name: "Quotations", href: "/quotations", icon: FileSpreadsheet, member: "M2" },
-  { name: "Subscriptions", href: "/subscriptions", icon: Repeat, member: "M2" },
-];
-
-const billingNavItems: NavLinkItem[] = [
-  { name: "Invoices", href: "/invoices", icon: Receipt, member: "M3" },
-  { name: "Payments", href: "/payments", icon: CreditCard, member: "M3" },
-];
-
-const systemNavItems: NavLinkItem[] = [
-  { name: "Settings", href: "/settings", icon: Settings, member: "M1" },
+const secondaryNav: NavItem[] = [
+  { name: "Products", href: "/products", icon: Package },
+  { name: "Plans", href: "/plans", icon: Layers },
+  { name: "Quotations", href: "/quotations", icon: FileSpreadsheet },
+  { name: "Staff", href: "/staff", icon: UserCheck },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
 
-  const renderNavGroup = (title: string, items: NavLinkItem[]) => (
-    <div className="py-2.5">
-      <h3 className="px-3 text-[11px] font-bold text-brightloop-sage uppercase tracking-wider mb-1.5">
-        {title}
-      </h3>
-      <div className="space-y-1">
-        {items.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
+  const isItemActive = (href: string) => {
+    if (href === "/dashboard") {
+      return pathname === "/dashboard" || pathname === "/";
+    }
+    return pathname.startsWith(href);
+  };
+
+  const renderNavLinks = (items: NavItem[]) => (
+    <div className="space-y-1">
+      {items.map((item) => {
+        const active = isItemActive(item.href);
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex items-center gap-3 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all group relative",
+              active
+                ? "bg-[#EBF1EA] text-[#F27B4B] border-l-[3px] border-[#F27B4B] rounded-l-none pl-3 font-bold"
+                : "text-[#1F2622]/85 hover:bg-[#EBF1EA]/60 hover:text-[#1F2622]"
+            )}
+          >
+            <Icon
               className={cn(
-                "flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-md transition-all group",
-                isActive
-                  ? "bg-brightloop-bg text-brightloop-text shadow-subtle border border-brightloop-border/80 font-bold"
-                  : "text-brightloop-text/80 hover:bg-brightloop-bg/50 hover:text-brightloop-text"
+                "w-4 h-4 shrink-0 transition-colors",
+                active
+                  ? "text-[#F27B4B]"
+                  : "text-[#8C9B8E] group-hover:text-[#1F2622]"
               )}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-all",
-                    isActive ? "bg-brightloop-coral scale-125" : "bg-transparent group-hover:bg-brightloop-sage/40"
-                  )}
-                />
-                <Icon
-                  className={cn(
-                    "w-4 h-4 shrink-0 transition-colors",
-                    isActive
-                      ? "text-brightloop-coral"
-                      : "text-brightloop-sage group-hover:text-brightloop-text"
-                  )}
-                />
-                <span>{item.name}</span>
-              </div>
-              <span
-                className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded font-mono font-medium border",
-                  isActive
-                    ? "bg-white text-brightloop-text border-brightloop-border"
-                    : "bg-brightloop-bg/40 text-brightloop-sage border-transparent group-hover:border-brightloop-border"
-                )}
-              >
-                {item.member}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+            />
+            <span className="truncate">{item.name}</span>
+          </Link>
+        );
+      })}
     </div>
   );
 
   return (
-    <aside className="w-64 border-r border-border bg-white flex flex-col shrink-0 h-screen sticky top-0 shadow-subtle z-20">
+    <aside className="w-60 border-r border-[#D5DDD2] bg-white flex flex-col shrink-0 h-screen sticky top-0 z-20 select-none">
       {/* Brand Logo Header */}
-      <div className="h-16 flex items-center px-6 border-b border-border gap-3 bg-white">
-        <div className="w-9 h-9 rounded-lg bg-brightloop-coral flex items-center justify-center text-white shadow-sm">
-          <Repeat className="w-5 h-5" />
-        </div>
-        <div>
-          <span className="font-extrabold text-base uppercase tracking-wider text-brightloop-text block leading-tight">
-            Brightloop
-          </span>
-          <span className="text-[11px] font-medium text-brightloop-sage uppercase tracking-wider">
-            Subscription OS
-          </span>
-        </div>
+      <div className="h-16 flex items-center px-5 border-b border-[#D5DDD2]/70 bg-white">
+        <Logo size="default" href="/dashboard" />
       </div>
 
-      {/* Navigation Sections */}
-      <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
-        {renderNavGroup("Core Management", mainNavItems)}
-        {renderNavGroup("Subscription Lifecycle", subscriptionNavItems)}
-        {renderNavGroup("Billing & Finance", billingNavItems)}
-        {renderNavGroup("System & Org", systemNavItems)}
+      {/* Navigation Body */}
+      <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+        {/* Menu Section Header */}
+        <div>
+          <div className="flex items-center gap-2 px-3 pb-2 text-xs font-bold text-[#8C9B8E] uppercase tracking-wider">
+            <Menu className="w-3.5 h-3.5 text-[#1F2622]" />
+            <span>Menu</span>
+          </div>
+          {renderNavLinks(primaryNav)}
+        </div>
+
+        {/* Divider with Center Diamond Node */}
+        <div className="relative py-2 px-3">
+          <div className="h-[1px] w-full bg-[#D5DDD2]" />
+          <div className="absolute left-1/2 -top-[1px] -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#8C9B8E]" />
+        </div>
+
+        {/* Secondary Modules */}
+        <div>
+          <div className="px-3 pb-2 text-[11px] font-bold text-[#8C9B8E] uppercase tracking-wider">
+            Operations
+          </div>
+          {renderNavLinks(secondaryNav)}
+        </div>
       </nav>
 
-      {/* Customer Portal Shortcut & Footer */}
-      <div className="p-3 border-t border-border bg-white space-y-2">
+      {/* Footer shortcut to Customer Self-Service Portal */}
+      <div className="p-3 border-t border-[#D5DDD2] bg-white space-y-2">
         <Link
-          href="/customer"
-          className="flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-md text-brightloop-text bg-brightloop-bg/40 hover:bg-brightloop-bg transition-colors border border-border"
+          href="/portal"
+          className="flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-lg text-[#1F2622] bg-[#EBF1EA]/60 hover:bg-[#EBF1EA] transition-colors border border-[#D5DDD2]"
         >
           <span className="flex items-center gap-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-brightloop-coral" />
-            Customer Portal
+            <ShieldCheck className="w-3.5 h-3.5 text-[#F27B4B]" />
+            <span>Customer Portal</span>
           </span>
-          <ExternalLink className="w-3 h-3 text-brightloop-sage" />
+          <ExternalLink className="w-3 h-3 text-[#8C9B8E]" />
         </Link>
-        <div className="px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-brightloop-sage">
-          Brightloop • Theme v1.0
+        <div className="px-2 text-[10px] text-[#8C9B8E] font-medium uppercase tracking-wider text-center">
+          Brightloop • Revenue Overview
         </div>
       </div>
     </aside>

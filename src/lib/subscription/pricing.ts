@@ -6,8 +6,6 @@
  */
 
 import { rupeesToPaise, paiseToRupees, calculateLineItem } from "@/lib/billing/math";
-import { getTaxRuleByCode } from "@/services/taxes";
-import { getDiscountByCode, evaluateDiscountEligibility } from "@/services/discounts";
 
 export interface PricingLineInput {
   unitPrice: number;
@@ -58,26 +56,23 @@ export function calculateSubscriptionTotal(
 }
 
 /**
- * Real tax and discount engine backed by Member 3's billing calculation services.
+ * Real tax and discount calculations backed by billing math.
  */
-export async function computeLineTaxes(lineAmountRupees: number, taxCode: string = "GST_18"): Promise<number> {
-  const rule = await getTaxRuleByCode(taxCode);
-  const rate = rule?.rate ?? 18;
+export async function computeLineTaxes(lineAmountRupees: number, taxRatePercent: number = 18): Promise<number> {
   const linePaise = rupeesToPaise(lineAmountRupees);
   const item = calculateLineItem({
     quantity: 1,
     unitPricePaise: linePaise,
-    taxRatePercent: rate,
+    taxRatePercent,
   });
   return paiseToRupees(item.taxPaise);
 }
 
-export async function applyDiscountToSubtotal(subtotalRupees: number, couponCode: string): Promise<number> {
-  const discount = await getDiscountByCode(couponCode);
-  if (!discount) return 0;
+export async function applyDiscountToSubtotal(subtotalRupees: number, discountPercent: number = 0): Promise<number> {
+  if (discountPercent <= 0) return 0;
   const subtotalPaise = rupeesToPaise(subtotalRupees);
-  const evalResult = evaluateDiscountEligibility(discount, subtotalPaise, 1);
-  return evalResult.valid ? paiseToRupees(evalResult.discountPaise) : 0;
+  const discountPaise = Math.round((subtotalPaise * discountPercent) / 100);
+  return paiseToRupees(discountPaise);
 }
 
 export interface TaxAndDiscountEngine {

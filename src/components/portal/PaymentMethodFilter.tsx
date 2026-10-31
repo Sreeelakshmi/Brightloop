@@ -44,10 +44,10 @@ export function PaymentMethodFilter() {
           type="button"
           onClick={() => setMethod(opt.value)}
           className={cn(
-            "h-7 px-3 text-[10px] font-bold uppercase tracking-widest rounded-[2px] border transition-colors font-mono",
+            "h-7 px-3 text-[10px] font-bold uppercase tracking-widest rounded-lg border transition-colors font-mono",
             method === opt.value
-              ? "bg-[#2B302B] text-white border-[#2B302B]"
-              : "bg-white text-[#2B302B] border-[#B9CBB9] hover:bg-[#D3E3D3]/60"
+              ? "bg-[#1F2622] text-white border-[#1F2622]"
+              : "bg-white text-[#1F2622] border-[#D5DDD2] hover:bg-[#DDE5DB]/60"
           )}
         >
           {opt.label}

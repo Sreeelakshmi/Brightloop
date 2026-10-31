@@ -40,7 +40,7 @@ async function PaymentList({ searchParams }: Props) {
       header: "Date",
       sortable: false,
       render: (p: Payment) => (
-        <span className="font-mono text-[#8A968A]">
+        <span className="font-mono text-[#8C9B8E]">
           {formatDate(p.paymentDate)}
         </span>
       ),
@@ -49,7 +49,7 @@ async function PaymentList({ searchParams }: Props) {
       key: "invoiceNo",
       header: "Invoice",
       render: (p: Payment) => (
-        <span className="font-mono font-bold text-[#2B302B]">
+        <span className="font-mono font-bold text-[#1F2622]">
           {p.invoiceNo ?? "—"}
         </span>
       ),
@@ -58,7 +58,7 @@ async function PaymentList({ searchParams }: Props) {
       key: "method",
       header: "Method",
       render: (p: Payment) => (
-        <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A968A] font-mono">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-[#8C9B8E] font-mono">
           {METHOD_LABEL[p.method] ?? p.method}
         </span>
       ),
@@ -68,7 +68,7 @@ async function PaymentList({ searchParams }: Props) {
       header: "Amount",
       align: "right" as const,
       render: (p: Payment) => (
-        <span className="tabular-nums font-bold text-[#2B302B]">
+        <span className="tabular-nums font-bold text-[#1F2622]">
           {formatMoney(p.amount)}
         </span>
       ),
@@ -77,7 +77,7 @@ async function PaymentList({ searchParams }: Props) {
       key: "reference",
       header: "Note / Reference",
       render: (p: Payment) => (
-        <span className="text-[11px] font-mono text-[#8A968A] truncate max-w-[160px] block">
+        <span className="text-[11px] font-mono text-[#8C9B8E] truncate max-w-[160px] block">
           {p.reference || "—"}
         </span>
       ),
@@ -136,7 +136,7 @@ export default async function PortalPaymentsPage({ searchParams }: Props) {
       {/* Payments Table */}
       <Suspense
         fallback={
-          <div className="bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] overflow-hidden">
+          <div className="bg-white border border-[#D5DDD2] rounded-xl overflow-hidden">
             <TableSkeleton rows={8} cols={5} />
           </div>
         }

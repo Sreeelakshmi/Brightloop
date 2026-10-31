@@ -50,7 +50,7 @@ async function InvoiceList({ searchParams }: Props) {
       render: (inv: Invoice) => (
         <Link
           href={`/portal/invoices/${inv.id}`}
-          className="font-mono font-bold text-[#2B302B] hover:text-[#F57B4A] transition-colors"
+          className="font-mono font-bold text-[#1F2622] hover:text-[#F27B4B] transition-colors"
         >
           {inv.invoiceNo || inv.invoiceNumber || inv.id}
         </Link>
@@ -60,7 +60,7 @@ async function InvoiceList({ searchParams }: Props) {
       key: "issueDate",
       header: "Issue Date",
       render: (inv: Invoice) => (
-        <span className="font-mono text-[#8A968A]">
+        <span className="font-mono text-[#8C9B8E]">
           {formatDate(inv.issueDate)}
         </span>
       ),
@@ -72,8 +72,8 @@ async function InvoiceList({ searchParams }: Props) {
         <span
           className={
             inv.status === "overdue"
-              ? "font-mono font-bold text-[#F57B4A]"
-              : "font-mono text-[#8A968A]"
+              ? "font-mono font-bold text-[#F27B4B]"
+              : "font-mono text-[#8C9B8E]"
           }
         >
           {formatDate(inv.dueDate)}
@@ -95,7 +95,7 @@ async function InvoiceList({ searchParams }: Props) {
       header: "Paid",
       align: "right" as const,
       render: (inv: Invoice) => (
-        <span className="tabular-nums text-[#8A968A]">
+        <span className="tabular-nums text-[#8C9B8E]">
           {formatMoney((inv.totalAmount ?? 0) - (inv.balance ?? 0))}
         </span>
       ),
@@ -108,7 +108,7 @@ async function InvoiceList({ searchParams }: Props) {
         <span
           className={cn(
             "tabular-nums font-bold",
-            (inv.balance ?? 0) > 0 ? "text-[#F57B4A]" : "text-[#8A968A]"
+            (inv.balance ?? 0) > 0 ? "text-[#F27B4B]" : "text-[#8C9B8E]"
           )}
         >
           {formatMoney(inv.balance ?? 0)}
@@ -131,7 +131,7 @@ async function InvoiceList({ searchParams }: Props) {
         <Link
           href={`/portal/invoices/${inv.id}`}
           title="View & Download Invoice"
-          className="inline-flex items-center justify-center w-7 h-7 rounded-[2px] border border-[#B9CBB9] text-[#8A968A] hover:text-[#2B302B] hover:border-[#2B302B] transition-colors"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-[#D5DDD2] text-[#8C9B8E] hover:text-[#1F2622] hover:border-[#1F2622] transition-colors"
           aria-label={`Download PDF for ${inv.invoiceNo || inv.invoiceNumber || inv.id}`}
         >
           <Download className="w-3.5 h-3.5" />
@@ -189,7 +189,7 @@ export default async function PortalInvoicesPage({ searchParams }: Props) {
       {/* Invoice Table */}
       <Suspense
         fallback={
-          <div className="bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] overflow-hidden">
+          <div className="bg-white border border-[#D5DDD2] rounded-xl overflow-hidden">
             <TableSkeleton rows={PAGE_SIZE} cols={8} />
           </div>
         }

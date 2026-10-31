@@ -42,18 +42,17 @@ export function ReportsSummarySkeleton() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] overflow-hidden flex flex-col justify-between"
+          className="bg-white border border-[#D5DDD2] rounded-xl overflow-hidden flex flex-col justify-between shadow-sm"
         >
-          <div className="h-7 bg-[#D3E3D3] animate-pulse px-3.5 flex items-center justify-between">
-            <div className="h-3 w-28 bg-[#8A968A]/40 rounded-[2px]" />
+          <div className="h-8 bg-[#DDE5DB] animate-pulse px-4 flex items-center justify-between">
+            <div className="h-3.5 w-28 bg-[#8C9B8E]/40 rounded-sm" />
           </div>
           <div className="p-4 sm:p-5 space-y-2">
-            <div className="h-8 w-3/4 bg-[#D3E3D3] animate-pulse rounded-[2px]" />
-            <div className="h-3.5 w-1/2 bg-[#D3E3D3]/60 animate-pulse rounded-[2px]" />
+            <div className="h-8 w-3/4 bg-[#EBF1EA] animate-pulse rounded-lg" />
+            <div className="h-3.5 w-1/2 bg-[#EBF1EA]/60 animate-pulse rounded-lg" />
           </div>
         </div>
       ))}
     </div>
   );
 }
-

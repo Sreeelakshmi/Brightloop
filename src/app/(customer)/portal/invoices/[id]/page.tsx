@@ -37,7 +37,7 @@ export default async function PortalInvoiceDetailPage({ params }: PageProps) {
       {/* Back nav */}
       <Link
         href="/portal/invoices"
-        className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#8A968A] hover:text-[#2B302B] transition-colors font-mono"
+        className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#8C9B8E] hover:text-[#1F2622] transition-colors font-mono"
       >
         <ChevronLeft className="w-3.5 h-3.5" />
         BACK TO INVOICES

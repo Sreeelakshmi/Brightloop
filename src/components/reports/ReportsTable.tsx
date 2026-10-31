@@ -58,7 +58,7 @@ export function ReportsTable({
           sortable: true,
           width: "140px",
           render: (row) => (
-            <span className="font-mono font-bold text-[#2B302B] text-xs">
+            <span className="font-mono font-bold text-[#1F2622] text-xs">
               {row.code}
             </span>
           ),
@@ -68,7 +68,7 @@ export function ReportsTable({
           header: "Customer",
           sortable: true,
           render: (row) => (
-            <span className="font-medium text-[#2B302B] text-xs">{row.name}</span>
+            <span className="font-medium text-[#1F2622] text-xs">{row.name}</span>
           ),
         },
         {
@@ -76,7 +76,7 @@ export function ReportsTable({
           header: "Plan",
           sortable: true,
           render: (row) => (
-            <span className="font-mono text-xs text-[#8A968A]">{row.secondary}</span>
+            <span className="font-mono text-xs text-[#8C9B8E]">{row.secondary}</span>
           ),
         },
         {
@@ -84,7 +84,7 @@ export function ReportsTable({
           header: "Start Date",
           sortable: true,
           render: (row) => (
-            <span className="font-mono text-xs text-[#8A968A]">
+            <span className="font-mono text-xs text-[#8C9B8E]">
               {formatDate(row.date)}
             </span>
           ),
@@ -95,7 +95,7 @@ export function ReportsTable({
           sortable: true,
           align: "right",
           render: (row) => (
-            <span className="font-mono font-bold text-xs text-[#2B302B] tabular-nums">
+            <span className="font-mono font-bold text-xs text-[#1F2622] tabular-nums">
               {formatMoney(row.metric1)}
             </span>
           ),
@@ -106,7 +106,7 @@ export function ReportsTable({
           sortable: true,
           align: "right",
           render: (row) => (
-            <span className="font-mono text-xs text-[#8A968A] tabular-nums">
+            <span className="font-mono text-xs text-[#8C9B8E] tabular-nums">
               {formatMoney(row.metric2)}
             </span>
           ),
@@ -130,7 +130,7 @@ export function ReportsTable({
           sortable: true,
           width: "140px",
           render: (row) => (
-            <span className="font-mono font-bold text-[#2B302B] text-xs">
+            <span className="font-mono font-bold text-[#1F2622] text-xs">
               {row.code}
             </span>
           ),
@@ -140,7 +140,7 @@ export function ReportsTable({
           header: "Customer",
           sortable: true,
           render: (row) => (
-            <span className="font-medium text-[#2B302B] text-xs">{row.name}</span>
+            <span className="font-medium text-[#1F2622] text-xs">{row.name}</span>
           ),
         },
         {
@@ -148,7 +148,7 @@ export function ReportsTable({
           header: "Method",
           sortable: true,
           render: (row) => (
-            <span className="font-mono text-xs text-[#2B302B] font-semibold">
+            <span className="font-mono text-xs text-[#1F2622] font-semibold">
               {row.secondary}
             </span>
           ),
@@ -158,7 +158,7 @@ export function ReportsTable({
           header: "Payment Date",
           sortable: true,
           render: (row) => (
-            <span className="font-mono text-xs text-[#8A968A]">
+            <span className="font-mono text-xs text-[#8C9B8E]">
               {formatDate(row.date)}
             </span>
           ),
@@ -169,7 +169,7 @@ export function ReportsTable({
           sortable: true,
           align: "right",
           render: (row) => (
-            <span className="font-mono font-bold text-xs text-[#2B302B] tabular-nums">
+            <span className="font-mono font-bold text-xs text-[#1F2622] tabular-nums">
               {formatMoney(row.metric1)}
             </span>
           ),
@@ -193,7 +193,7 @@ export function ReportsTable({
         sortable: true,
         width: "140px",
         render: (row) => (
-          <span className="font-mono font-bold text-[#2B302B] text-xs">
+          <span className="font-mono font-bold text-[#1F2622] text-xs">
             {row.code}
           </span>
         ),
@@ -203,7 +203,7 @@ export function ReportsTable({
         header: "Customer",
         sortable: true,
         render: (row) => (
-          <span className="font-medium text-[#2B302B] text-xs">{row.name}</span>
+          <span className="font-medium text-[#1F2622] text-xs">{row.name}</span>
         ),
       },
       {
@@ -211,7 +211,7 @@ export function ReportsTable({
         header: "Issue Date",
         sortable: true,
         render: (row) => (
-          <span className="font-mono text-xs text-[#8A968A]">
+          <span className="font-mono text-xs text-[#8C9B8E]">
             {formatDate(row.date)}
           </span>
         ),
@@ -221,7 +221,7 @@ export function ReportsTable({
         header: "Due Date",
         sortable: true,
         render: (row) => (
-          <span className="font-mono text-xs text-[#8A968A]">{row.secondary}</span>
+          <span className="font-mono text-xs text-[#8C9B8E]">{row.secondary}</span>
         ),
       },
       {
@@ -230,7 +230,7 @@ export function ReportsTable({
         sortable: true,
         align: "right",
         render: (row) => (
-          <span className="font-mono font-bold text-xs text-[#2B302B] tabular-nums">
+          <span className="font-mono font-bold text-xs text-[#1F2622] tabular-nums">
             {formatMoney(row.metric1)}
           </span>
         ),
@@ -243,7 +243,7 @@ export function ReportsTable({
         render: (row) => (
           <span
             className={`font-mono text-xs tabular-nums ${
-              row.metric2 > 0 ? "text-[#F57B4A] font-bold" : "text-[#8A968A]"
+              row.metric2 > 0 ? "text-[#F27B4B] font-bold" : "text-[#8C9B8E]"
             }`}
           >
             {formatMoney(row.metric2)}

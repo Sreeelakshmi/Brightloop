@@ -213,7 +213,7 @@ export async function getPaymentsByMethod(
 ): Promise<PaymentsByMethodPoint[]> {
   if (shouldUseMockData()) {
     // Exact tri-color distribution matching mockup donut:
-    // Charcoal (#2B302B), Grey-Green (#8A968A), Accent Orange (#F57B4A), Light Sage (#D3E3D3)
+    // Charcoal (#1F2622), Grey-Green (#8C9B8E), Accent Orange (#F27B4B), Light Sage (#DDE5DB)
     return [
       {
         method: "direct_debit",
@@ -245,7 +245,7 @@ export async function getPaymentsByMethod(
         amount: 391400,
         count: 28,
         percentage: 8.0,
-        colorHex: "#D3E3D3",
+        colorHex: "#B9CBB9",
       },
     ];
   }

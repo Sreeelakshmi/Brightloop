@@ -32,7 +32,7 @@ export function ReportsTabs({ activeTab }: ReportsTabsProps) {
   };
 
   return (
-    <div className="flex items-center gap-1.5 border-b-[1.5px] border-[#B9CBB9] pb-0 overflow-x-auto">
+    <div className="flex items-center gap-1 border-b border-[#D5DDD2] pb-0 overflow-x-auto">
       {TABS.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
@@ -41,15 +41,15 @@ export function ReportsTabs({ activeTab }: ReportsTabsProps) {
             type="button"
             onClick={() => handleTabChange(tab.id)}
             className={cn(
-              "relative px-4 py-2 text-xs font-mono font-bold tracking-wider transition-all select-none rounded-t-[3px] border-t-[1.5px] border-x-[1.5px]",
+              "relative px-4 py-2 text-xs font-bold tracking-wider transition-all select-none rounded-t-lg border-t border-x",
               isActive
-                ? "bg-white text-[#2B302B] border-[#B9CBB9] border-b-transparent -mb-[1.5px] z-10"
-                : "bg-[#D3E3D3]/40 text-[#8A968A] border-transparent hover:text-[#2B302B] hover:bg-[#D3E3D3]/70"
+                ? "bg-white text-[#1F2622] border-[#D5DDD2] border-b-transparent -mb-[1px] z-10 shadow-sm"
+                : "bg-[#EBF1EA]/60 text-[#8C9B8E] border-transparent hover:text-[#1F2622] hover:bg-[#EBF1EA]"
             )}
           >
             {/* Active orange marker indicator */}
             {isActive && (
-              <span className="absolute -top-[1.5px] left-0 right-0 h-[2.5px] bg-[#F57B4A] rounded-t-[2px]" />
+              <span className="absolute -top-[1px] left-0 right-0 h-[2.5px] bg-[#F27B4B] rounded-t-lg" />
             )}
             {tab.label}
           </button>
@@ -58,4 +58,3 @@ export function ReportsTabs({ activeTab }: ReportsTabsProps) {
     </div>
   );
 }
-

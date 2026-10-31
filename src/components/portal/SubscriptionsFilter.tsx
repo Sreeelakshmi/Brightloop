@@ -33,8 +33,8 @@ export function SubscriptionsFilter({ currentStatus }: SubscriptionsFilterProps)
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 p-1 bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] w-fit">
-      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8A968A] px-2">
+    <div className="flex flex-wrap items-center gap-1.5 p-1 bg-white border border-[#D5DDD2] rounded-xl w-fit">
+      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8C9B8E] px-2">
         Filter:
       </span>
       {STATUSES.map((s) => {
@@ -45,10 +45,10 @@ export function SubscriptionsFilter({ currentStatus }: SubscriptionsFilterProps)
             type="button"
             onClick={() => handleSelect(s.id)}
             className={cn(
-              "px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider rounded-[2px] transition-colors",
+              "px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors",
               isActive
-                ? "bg-[#2B302B] text-white"
-                : "text-[#8A968A] hover:text-[#2B302B] hover:bg-[#D3E3D3]/50"
+                ? "bg-[#1F2622] text-white"
+                : "text-[#8C9B8E] hover:text-[#1F2622] hover:bg-[#DDE5DB]/50"
             )}
           >
             {s.label}

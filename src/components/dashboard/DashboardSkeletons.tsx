@@ -23,7 +23,7 @@ export function ChartsSkeleton() {
 export function OverdueSkeleton() {
   return (
     <div className="space-y-3">
-      <div className="h-4 w-36 bg-[#D3E3D3] rounded-[2px] animate-pulse" />
+      <div className="h-4 w-36 bg-[#DDE5DB] rounded-lg animate-pulse" />
       <TableSkeleton rows={6} cols={7} />
     </div>
   );

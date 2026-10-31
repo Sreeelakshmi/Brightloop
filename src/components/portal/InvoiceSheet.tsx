@@ -69,13 +69,13 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
   return (
     <div
       className={cn(
-        "bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] overflow-hidden print:border-0 print:rounded-none",
+        "bg-white border border-[#D5DDD2] rounded-xl overflow-hidden print:border-0 print:rounded-none",
         className
       )}
     >
       {/* ── Overdue Banner ─────────────────────────────────────────────── */}
       {isOverdue && (
-        <div className="bg-[#F57B4A] text-white px-5 py-2.5 flex items-center gap-2.5 print:block">
+        <div className="bg-[#F27B4B] text-white px-5 py-2.5 flex items-center gap-2.5 print:block">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           <span className="text-xs font-bold uppercase tracking-widest">
             OVERDUE — {invoice.daysOverdue ?? 0} day{(invoice.daysOverdue ?? 0) !== 1 ? "s" : ""} past due.
@@ -86,13 +86,13 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
 
       <div className="p-6 sm:p-8 space-y-8 print:p-6">
         {/* ── Company Header ──────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row justify-between gap-6 border-b border-[#B9CBB9] pb-6">
+        <div className="flex flex-col sm:flex-row justify-between gap-6 border-b border-[#D5DDD2] pb-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
               {/* Inline hexagon logo mark */}
               <svg
                 viewBox="0 0 24 24"
-                className="w-6 h-6 text-[#2B302B]"
+                className="w-6 h-6 text-[#1F2622]"
                 fill="none"
                 aria-hidden
               >
@@ -103,11 +103,11 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
                   strokeLinejoin="round"
                 />
               </svg>
-              <span className="text-lg font-black uppercase tracking-tight text-[#2B302B]">
+              <span className="text-lg font-black uppercase tracking-tight text-[#1F2622]">
                 BRIGHTLOOP
               </span>
             </div>
-            <p className="text-[11px] text-[#8A968A] font-mono leading-relaxed">
+            <p className="text-[11px] text-[#8C9B8E] font-mono leading-relaxed">
               Subscription Control System<br />
               12 Telemetry Park, Sector 5<br />
               Bengaluru, Karnataka 560001<br />
@@ -116,21 +116,21 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
           </div>
 
           <div className="text-right sm:text-right">
-            <div className="text-2xl font-black uppercase text-[#2B302B] tracking-tight">
+            <div className="text-2xl font-black uppercase text-[#1F2622] tracking-tight">
               INVOICE
             </div>
             <div className="mt-2 space-y-0.5 text-[11px] font-mono">
               <div>
-                <span className="text-[#8A968A]">NO: </span>
-                <span className="font-bold text-[#2B302B]">{invoice.invoiceNo || invoice.invoiceNumber || invoice.id}</span>
+                <span className="text-[#8C9B8E]">NO: </span>
+                <span className="font-bold text-[#1F2622]">{invoice.invoiceNo || invoice.invoiceNumber || invoice.id}</span>
               </div>
               <div>
-                <span className="text-[#8A968A]">ISSUED: </span>
-                <span className="text-[#2B302B]">{formatDate(invoice.issueDate)}</span>
+                <span className="text-[#8C9B8E]">ISSUED: </span>
+                <span className="text-[#1F2622]">{formatDate(invoice.issueDate)}</span>
               </div>
               <div>
-                <span className="text-[#8A968A]">DUE: </span>
-                <span className={cn("font-bold", isOverdue ? "text-[#F57B4A]" : "text-[#2B302B]")}>
+                <span className="text-[#8C9B8E]">DUE: </span>
+                <span className={cn("font-bold", isOverdue ? "text-[#F27B4B]" : "text-[#1F2622]")}>
                   {formatDate(invoice.dueDate)}
                 </span>
               </div>
@@ -143,13 +143,13 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
 
         {/* ── Customer Block ──────────────────────────────────────────── */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#8A968A] font-mono mb-1.5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C9B8E] font-mono mb-1.5">
             BILL TO
           </p>
-          <p className="text-sm font-bold text-[#2B302B]">
+          <p className="text-sm font-bold text-[#1F2622]">
             {invoice.customer?.company ?? invoice.customer?.name ?? "—"}
           </p>
-          <p className="text-[11px] text-[#8A968A] font-mono leading-relaxed mt-0.5">
+          <p className="text-[11px] text-[#8C9B8E] font-mono leading-relaxed mt-0.5">
             {invoice.customer?.address ?? "Address on file"}<br />
             {invoice.customer?.email}<br />
             {invoice.customer?.taxId && <>GSTIN: {invoice.customer.taxId}</>}
@@ -160,12 +160,12 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
         <div>
           <table className="w-full border-collapse text-xs">
             <thead>
-              <tr className="bg-[#D3E3D3] border-b-[1.5px] border-[#B9CBB9]">
+              <tr className="bg-[#DDE5DB] border-b-[1.5px] border-[#D5DDD2]">
                 {["DESCRIPTION", "QTY", "UNIT PRICE", "AMOUNT"].map((h) => (
                   <th
                     key={h}
                     className={cn(
-                      "px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#2B302B] font-mono",
+                      "px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#1F2622] font-mono",
                       h !== "DESCRIPTION" ? "text-right" : "text-left"
                     )}
                   >
@@ -174,19 +174,19 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#B9CBB9]/60">
+            <tbody className="divide-y divide-[#D5DDD2]/60">
               {lines.map((line, i) => (
                 <tr key={line.id ?? i} className="bg-white">
-                  <td className="px-3 py-2.5 text-[#2B302B] font-medium">
+                  <td className="px-3 py-2.5 text-[#1F2622] font-medium">
                     {line.description}
                   </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-[#8A968A]">
+                  <td className="px-3 py-2.5 text-right tabular-nums text-[#8C9B8E]">
                     {line.quantity}
                   </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-[#8A968A]">
+                  <td className="px-3 py-2.5 text-right tabular-nums text-[#8C9B8E]">
                     {formatMoney(line.unitPrice)}
                   </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums font-semibold text-[#2B302B]">
+                  <td className="px-3 py-2.5 text-right tabular-nums font-semibold text-[#1F2622]">
                     {formatMoney(line.amount)}
                   </td>
                 </tr>
@@ -197,41 +197,41 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
 
         {/* ── Totals Box ──────────────────────────────────────────────── */}
         <div className="flex justify-end">
-          <div className="w-full sm:w-72 space-y-1.5 bg-[#E4EEE4]/50 border border-[#B9CBB9] rounded-[2px] p-4">
+          <div className="w-full sm:w-72 space-y-1.5 bg-[#E4ECE1]/50 border border-[#D5DDD2] rounded-lg p-4">
             {discountAmount > 0 && (
               <div className="flex justify-between text-xs">
-                <span className="text-[#8A968A] font-mono uppercase tracking-wide">
+                <span className="text-[#8C9B8E] font-mono uppercase tracking-wide">
                   DISCOUNT
                 </span>
-                <span className="text-[#F57B4A] font-semibold tabular-nums">
+                <span className="text-[#F27B4B] font-semibold tabular-nums">
                   −{formatMoney(discountAmount)}
                 </span>
               </div>
             )}
 
-            <div className="flex justify-between text-xs border-t border-[#B9CBB9] pt-1.5">
-              <span className="font-bold uppercase tracking-wide text-[#2B302B] font-mono">
+            <div className="flex justify-between text-xs border-t border-[#D5DDD2] pt-1.5">
+              <span className="font-bold uppercase tracking-wide text-[#1F2622] font-mono">
                 GRAND TOTAL
               </span>
-              <span className="font-black text-[#2B302B] tabular-nums">
+              <span className="font-black text-[#1F2622] tabular-nums">
                 {formatMoney(grandTotal)}
               </span>
             </div>
 
             <div className="flex justify-between text-xs">
-              <span className="text-[#8A968A] font-mono uppercase tracking-wide">
+              <span className="text-[#8C9B8E] font-mono uppercase tracking-wide">
                 PAID
               </span>
-              <span className="text-[#2B302B] font-semibold tabular-nums">
+              <span className="text-[#1F2622] font-semibold tabular-nums">
                 {formatMoney(paidAmount)}
               </span>
             </div>
 
-            <div className="flex justify-between text-xs border-t border-[#B9CBB9] pt-1.5">
+            <div className="flex justify-between text-xs border-t border-[#D5DDD2] pt-1.5">
               <span
                 className={cn(
                   "font-bold uppercase tracking-wide font-mono",
-                  balance > 0 ? "text-[#F57B4A]" : "text-[#2B302B]"
+                  balance > 0 ? "text-[#F27B4B]" : "text-[#1F2622]"
                 )}
               >
                 BALANCE DUE
@@ -239,7 +239,7 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
               <span
                 className={cn(
                   "font-black tabular-nums",
-                  balance > 0 ? "text-[#F57B4A]" : "text-[#2B302B]"
+                  balance > 0 ? "text-[#F27B4B]" : "text-[#1F2622]"
                 )}
               >
                 {formatMoney(balance)}
@@ -251,7 +251,7 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
         {/* ── Payment History ─────────────────────────────────────────── */}
         {payments.length > 0 && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#8A968A] font-mono mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#8C9B8E] font-mono mb-3">
               PAYMENT HISTORY
             </p>
             <PaymentHistoryTimeline payments={payments} />
@@ -259,11 +259,11 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
         )}
 
         {/* ── Download / Print Actions ────────────────────────────────── */}
-        <div className="flex items-center gap-3 pt-2 border-t border-[#B9CBB9] print:hidden">
+        <div className="flex items-center gap-3 pt-2 border-t border-[#D5DDD2] print:hidden">
           <button
             type="button"
             onClick={handleDownload}
-            className="inline-flex items-center gap-2 h-8 px-4 text-[10px] font-bold uppercase tracking-widest rounded-[2px] border border-[#B9CBB9] bg-white text-[#2B302B] hover:bg-[#D3E3D3]/60 transition-colors font-mono"
+            className="inline-flex items-center gap-2 h-8 px-4 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-[#D5DDD2] bg-white text-[#1F2622] hover:bg-[#DDE5DB]/60 transition-colors font-mono"
           >
             <Download className="w-3.5 h-3.5" />
             DOWNLOAD PDF
@@ -271,11 +271,11 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex items-center gap-2 h-8 px-4 text-[10px] font-bold uppercase tracking-widest rounded-[2px] border border-[#B9CBB9] bg-white text-[#2B302B] hover:bg-[#D3E3D3]/60 transition-colors font-mono"
+            className="inline-flex items-center gap-2 h-8 px-4 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-[#D5DDD2] bg-white text-[#1F2622] hover:bg-[#DDE5DB]/60 transition-colors font-mono"
           >
             PRINT
           </button>
-          <p className="text-[10px] text-[#8A968A] font-mono ml-1">
+          <p className="text-[10px] text-[#8C9B8E] font-mono ml-1">
             {/* TODO: Member 3 – replace placeholder with real PDF service endpoint */}
           </p>
         </div>

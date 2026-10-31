@@ -26,7 +26,7 @@ export function PaymentHistoryTimeline({
 }: PaymentHistoryTimelineProps) {
   if (!payments || payments.length === 0) {
     return (
-      <div className={cn("py-6 text-center text-[#8A968A] text-xs font-mono", className)}>
+      <div className={cn("py-6 text-center text-[#8C9B8E] text-xs font-mono", className)}>
         NO PAYMENT RECORDS
       </div>
     );
@@ -38,30 +38,30 @@ export function PaymentHistoryTimeline({
         <div key={payment.id} className="flex gap-3">
           {/* Timeline track */}
           <div className="flex flex-col items-center">
-            <div className="w-6 h-6 rounded-full bg-[#D3E3D3] border-[1.5px] border-[#B9CBB9] flex items-center justify-center shrink-0 mt-0.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#2B302B]" />
+            <div className="w-6 h-6 rounded-full bg-[#DDE5DB] border border-[#D5DDD2] flex items-center justify-center shrink-0 mt-0.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#1F2622]" />
             </div>
             {idx < payments.length - 1 && (
-              <div className="w-px flex-1 bg-[#B9CBB9] my-1 min-h-[20px]" />
+              <div className="w-px flex-1 bg-[#D5DDD2] my-1 min-h-[20px]" />
             )}
           </div>
 
           {/* Content */}
           <div className="pb-4 min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <span className="text-xs font-bold text-[#2B302B] tabular-nums">
+              <span className="text-xs font-bold text-[#1F2622] tabular-nums">
                 {formatMoney(payment.amount, { currency: payment.currency === "INR" ? "₹" : payment.currency })}
               </span>
-              <span className="text-[10px] font-mono text-[#8A968A]">
+              <span className="text-[10px] font-mono text-[#8C9B8E]">
                 {formatDate(payment.paymentDate)}
               </span>
             </div>
             <div className="mt-0.5 flex flex-wrap items-center gap-2">
-              <span className="text-[10px] uppercase tracking-wider font-bold font-mono text-[#8A968A]">
+              <span className="text-[10px] uppercase tracking-wider font-bold font-mono text-[#8C9B8E]">
                 {METHOD_LABEL[payment.method] ?? payment.method}
               </span>
               {payment.reference && (
-                <span className="text-[10px] font-mono text-[#8A968A]">
+                <span className="text-[10px] font-mono text-[#8C9B8E]">
                   REF: {payment.reference}
                 </span>
               )}

@@ -65,7 +65,7 @@ export function OverdueTable({ data, total, page, pageSize }: OverdueTableProps)
       sortable: true,
       width: "120px",
       render: (row) => (
-        <span className="font-mono font-semibold text-[#2B302B] text-xs">{row.invoiceNo}</span>
+        <span className="font-mono font-bold text-[#1F2622] text-xs">{row.invoiceNo}</span>
       ),
     },
     {
@@ -73,7 +73,7 @@ export function OverdueTable({ data, total, page, pageSize }: OverdueTableProps)
       header: "Customer",
       sortable: true,
       render: (row) => (
-        <span className="text-xs text-[#2B302B] font-medium">
+        <span className="text-xs text-[#1F2622] font-semibold">
           {row.customer?.company ?? "—"}
         </span>
       ),
@@ -83,7 +83,7 @@ export function OverdueTable({ data, total, page, pageSize }: OverdueTableProps)
       header: "Due Date",
       sortable: true,
       render: (row) => (
-        <span className="font-mono text-xs text-[#8A968A]">{formatDate(row.dueDate)}</span>
+        <span className="text-xs text-[#8C9B8E]">{formatDate(row.dueDate)}</span>
       ),
     },
     {
@@ -94,7 +94,7 @@ export function OverdueTable({ data, total, page, pageSize }: OverdueTableProps)
       render: (row) => {
         const days = daysOverdue(row.dueDate);
         return (
-          <span className="font-mono font-bold text-[#F57B4A] text-xs tabular-nums">
+          <span className="font-bold text-[#F27B4B] text-xs tabular-nums">
             {days}d
           </span>
         );
@@ -106,7 +106,7 @@ export function OverdueTable({ data, total, page, pageSize }: OverdueTableProps)
       sortable: true,
       align: "right",
       render: (row) => (
-        <span className="font-mono tabular-nums text-xs text-[#2B302B] font-semibold">
+        <span className="font-mono tabular-nums text-xs text-[#1F2622] font-bold">
           {formatMoney(row.balance)}
         </span>
       ),
@@ -130,7 +130,7 @@ export function OverdueTable({ data, total, page, pageSize }: OverdueTableProps)
             e.stopPropagation();
             showToast(`Reminder sent for ${row.invoiceNo}`);
           }}
-          className="h-7 px-3 text-[11px] font-semibold border-[1.5px] border-[#B9CBB9] rounded-[3px] bg-white text-[#2B302B] hover:bg-[#D3E3D3]/60 hover:border-[#2B302B] transition-colors focus-visible:outline-[#F57B4A] focus-visible:outline-2 font-mono"
+          className="h-7 px-3 text-xs font-semibold border border-[#D5DDD2] rounded-lg bg-white text-[#1F2622] hover:bg-[#EBF1EA] transition-colors focus-visible:outline-[#F27B4B] focus-visible:outline-2"
         >
           Send reminder
         </button>
@@ -142,7 +142,7 @@ export function OverdueTable({ data, total, page, pageSize }: OverdueTableProps)
     <div className="relative">
       {/* Toast */}
       {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#2B302B] text-white text-xs px-4 py-2.5 rounded-[3px] font-mono shadow-lg border border-[#8A968A]/40 animate-fade-in">
+        <div className="fixed bottom-6 right-6 z-50 bg-[#1F2622] text-white text-xs px-4 py-2.5 rounded-lg font-medium shadow-xl border border-[#D5DDD2] animate-fade-in">
           ✓ {toastMsg}
         </div>
       )}

@@ -41,59 +41,59 @@ export function OrderLinesTable({ subscription }: OrderLinesTableProps) {
   const grandTotal = subtotal + taxes;
 
   return (
-    <div className="bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] p-5 shadow-none space-y-4">
-      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8A968A] pb-2 border-b border-[#B9CBB9]">
+    <div className="bg-white border border-[#D5DDD2] rounded-xl p-5 shadow-none space-y-4">
+      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8C9B8E] pb-2 border-b border-[#D5DDD2]">
         ORDER LINES // ITEMIZED SPECIFICATION
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-[#D3E3D3] border-b border-[#B9CBB9]">
-              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B]">
+            <tr className="bg-[#DDE5DB] border-b border-[#D5DDD2]">
+              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622]">
                 Product
               </th>
-              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B]">
+              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622]">
                 Variant
               </th>
-              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B] text-center">
+              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622] text-center">
                 Qty
               </th>
-              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B] text-right">
+              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622] text-right">
                 Unit Price
               </th>
-              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B] text-right">
+              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622] text-right">
                 Taxes (18%)
               </th>
-              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B] text-right">
+              <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622] text-right">
                 Amount
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#B9CBB9]/60">
+          <tbody className="divide-y divide-[#D5DDD2]/60">
             {lines.map((line: any, idx: number) => {
               const lineTax = Math.round((line.amount ?? 0) * taxRate);
               return (
                 <tr
                   key={line.id || idx}
-                  className="bg-white hover:bg-[#E4EEE4]/40 transition-colors"
+                  className="bg-white hover:bg-[#E4ECE1]/40 transition-colors"
                 >
-                  <td className="px-3.5 py-3 text-xs font-semibold text-[#2B302B]">
+                  <td className="px-3.5 py-3 text-xs font-semibold text-[#1F2622]">
                     {line.description || "Subscription Line"}
                   </td>
-                  <td className="px-3.5 py-3 text-xs font-mono text-[#8A968A]">
+                  <td className="px-3.5 py-3 text-xs font-mono text-[#8C9B8E]">
                     {subscription.plan?.code || "STD"}
                   </td>
-                  <td className="px-3.5 py-3 text-xs font-mono text-[#2B302B] text-center">
+                  <td className="px-3.5 py-3 text-xs font-mono text-[#1F2622] text-center">
                     {line.quantity}
                   </td>
-                  <td className="px-3.5 py-3 text-xs font-mono text-[#2B302B] text-right tabular-nums">
+                  <td className="px-3.5 py-3 text-xs font-mono text-[#1F2622] text-right tabular-nums">
                     {formatMoney(line.unitPrice)}
                   </td>
-                  <td className="px-3.5 py-3 text-xs font-mono text-[#8A968A] text-right tabular-nums">
+                  <td className="px-3.5 py-3 text-xs font-mono text-[#8C9B8E] text-right tabular-nums">
                     {formatMoney(lineTax)}
                   </td>
-                  <td className="px-3.5 py-3 text-xs font-mono font-bold text-[#2B302B] text-right tabular-nums">
+                  <td className="px-3.5 py-3 text-xs font-mono font-bold text-[#1F2622] text-right tabular-nums">
                     {formatMoney(line.amount ?? 0)}
                   </td>
                 </tr>
@@ -105,22 +105,22 @@ export function OrderLinesTable({ subscription }: OrderLinesTableProps) {
 
       {/* Totals Box */}
       <div className="flex justify-end pt-3">
-        <div className="w-full sm:w-72 bg-[#E4EEE4]/40 p-4 rounded-[2px] border border-[#B9CBB9] space-y-2">
+        <div className="w-full sm:w-72 bg-[#E4ECE1]/40 p-4 rounded-lg border border-[#D5DDD2] space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-mono text-[#8A968A] uppercase">Subtotal</span>
-            <span className="font-mono font-semibold text-[#2B302B] tabular-nums">
+            <span className="font-mono text-[#8C9B8E] uppercase">Subtotal</span>
+            <span className="font-mono font-semibold text-[#1F2622] tabular-nums">
               {formatMoney(subtotal)}
             </span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="font-mono text-[#8A968A] uppercase">GST (18%)</span>
-            <span className="font-mono text-[#8A968A] tabular-nums">
+            <span className="font-mono text-[#8C9B8E] uppercase">GST (18%)</span>
+            <span className="font-mono text-[#8C9B8E] tabular-nums">
               {formatMoney(taxes)}
             </span>
           </div>
-          <div className="flex items-center justify-between text-sm pt-2 border-t border-[#B9CBB9]">
-            <span className="font-mono font-bold text-[#2B302B] uppercase">Total</span>
-            <span className="font-mono font-extrabold text-[#2B302B] text-base tabular-nums">
+          <div className="flex items-center justify-between text-sm pt-2 border-t border-[#D5DDD2]">
+            <span className="font-mono font-bold text-[#1F2622] uppercase">Total</span>
+            <span className="font-mono font-extrabold text-[#1F2622] text-base tabular-nums">
               {formatMoney(grandTotal)}
             </span>
           </div>

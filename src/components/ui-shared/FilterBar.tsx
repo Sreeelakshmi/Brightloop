@@ -73,7 +73,7 @@ export function FilterBar({
   return (
     <div
       className={cn(
-        "bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-3 shadow-none",
+        "bg-white border border-[#D5DDD2] rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm",
         className
       )}
     >
@@ -81,8 +81,8 @@ export function FilterBar({
       <div className="flex flex-wrap items-center gap-2 text-xs">
         {/* Date Preset */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A968A] font-bold">
-            Date preset:
+          <span className="text-[11px] font-medium text-[#8C9B8E] select-none">
+            Date preset
           </span>
           <DateRangePicker
             value={{
@@ -99,7 +99,7 @@ export function FilterBar({
           <select
             value={localFilters.customer || "all"}
             onChange={(e) => updateField("customer", e.target.value)}
-            className="h-8 pl-2.5 pr-6 bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] text-xs font-semibold text-[#2B302B] hover:bg-[#D3E3D3]/30 focus:outline-none focus:border-[#2B302B] appearance-none cursor-pointer"
+            className="h-8 pl-3 pr-7 bg-white border border-[#D5DDD2] rounded-lg text-xs font-semibold text-[#1F2622] hover:bg-[#EBF1EA]/60 focus:outline-none focus:border-[#1F2622] appearance-none cursor-pointer transition-colors"
           >
             {customerOptions.map((c) => (
               <option key={c} value={c.toLowerCase().replace(/\s+/g, "-")}>
@@ -107,7 +107,7 @@ export function FilterBar({
               </option>
             ))}
           </select>
-          <span className="pointer-events-none absolute right-2 top-2.5 text-[9px] text-[#8A968A]">
+          <span className="pointer-events-none absolute right-2.5 top-2.5 text-[9px] text-[#8C9B8E]">
             ▼
           </span>
         </div>
@@ -117,7 +117,7 @@ export function FilterBar({
           <select
             value={localFilters.plan || "all"}
             onChange={(e) => updateField("plan", e.target.value)}
-            className="h-8 pl-2.5 pr-6 bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] text-xs font-semibold text-[#2B302B] hover:bg-[#D3E3D3]/30 focus:outline-none focus:border-[#2B302B] appearance-none cursor-pointer"
+            className="h-8 pl-3 pr-7 bg-white border border-[#D5DDD2] rounded-lg text-xs font-semibold text-[#1F2622] hover:bg-[#EBF1EA]/60 focus:outline-none focus:border-[#1F2622] appearance-none cursor-pointer transition-colors"
           >
             {planOptions.map((p) => (
               <option key={p} value={p.toLowerCase().replace(/\s+/g, "-")}>
@@ -125,7 +125,7 @@ export function FilterBar({
               </option>
             ))}
           </select>
-          <span className="pointer-events-none absolute right-2 top-2.5 text-[9px] text-[#8A968A]">
+          <span className="pointer-events-none absolute right-2.5 top-2.5 text-[9px] text-[#8C9B8E]">
             ▼
           </span>
         </div>
@@ -135,7 +135,7 @@ export function FilterBar({
           <select
             value={localFilters.status || "all"}
             onChange={(e) => updateField("status", e.target.value)}
-            className="h-8 pl-2.5 pr-6 bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] text-xs font-semibold text-[#2B302B] hover:bg-[#D3E3D3]/30 focus:outline-none focus:border-[#2B302B] appearance-none cursor-pointer"
+            className="h-8 pl-3 pr-7 bg-white border border-[#D5DDD2] rounded-lg text-xs font-semibold text-[#1F2622] hover:bg-[#EBF1EA]/60 focus:outline-none focus:border-[#1F2622] appearance-none cursor-pointer transition-colors"
           >
             {statusOptions.map((s) => (
               <option key={s} value={s.toLowerCase()}>
@@ -143,7 +143,7 @@ export function FilterBar({
               </option>
             ))}
           </select>
-          <span className="pointer-events-none absolute right-2 top-2.5 text-[9px] text-[#8A968A]">
+          <span className="pointer-events-none absolute right-2.5 top-2.5 text-[9px] text-[#8C9B8E]">
             ▼
           </span>
         </div>
@@ -153,7 +153,7 @@ export function FilterBar({
           <select
             value={localFilters.paymentMethod || "all"}
             onChange={(e) => updateField("paymentMethod", e.target.value)}
-            className="h-8 pl-2.5 pr-6 bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] text-xs font-semibold text-[#2B302B] hover:bg-[#D3E3D3]/30 focus:outline-none focus:border-[#2B302B] appearance-none cursor-pointer"
+            className="h-8 pl-3 pr-7 bg-white border border-[#D5DDD2] rounded-lg text-xs font-semibold text-[#1F2622] hover:bg-[#EBF1EA]/60 focus:outline-none focus:border-[#1F2622] appearance-none cursor-pointer transition-colors"
           >
             {paymentMethodOptions.map((m) => (
               <option key={m} value={m.toLowerCase().replace(/\s+/g, "-")}>
@@ -161,7 +161,7 @@ export function FilterBar({
               </option>
             ))}
           </select>
-          <span className="pointer-events-none absolute right-2 top-2.5 text-[9px] text-[#8A968A]">
+          <span className="pointer-events-none absolute right-2.5 top-2.5 text-[9px] text-[#8C9B8E]">
             ▼
           </span>
         </div>
@@ -174,17 +174,14 @@ export function FilterBar({
           variant="ghost"
           size="sm"
           onClick={handleReset}
-          className="text-[#8A968A] hover:text-[#2B302B] text-xs gap-1 h-8 px-2"
+          className="text-[#8C9B8E] hover:text-[#1F2622] text-xs gap-1 h-8 px-2 hover:bg-transparent"
         >
           <RotateCcw className="w-3 h-3" />
           Reset
         </Button>
 
         {/* Summary / Detailed Toggle */}
-        <div className="flex items-center gap-1.5 text-xs select-none">
-          <label className="text-[11px] font-medium text-[#8A968A] cursor-pointer">
-            Summary
-          </label>
+        <div className="flex items-center gap-2 text-xs select-none">
           <button
             type="button"
             role="switch"
@@ -196,20 +193,20 @@ export function FilterBar({
               )
             }
             className={cn(
-              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-[1.5px] border-[#B9CBB9] transition-colors focus:outline-none",
-              localFilters.viewMode === "detailed" ? "bg-[#2B302B]" : "bg-[#D3E3D3]"
+              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-[#D5DDD2] transition-colors focus:outline-none",
+              localFilters.viewMode === "detailed" ? "bg-[#1F2622]" : "bg-[#DDE5DB]"
             )}
           >
             <span
               className={cn(
-                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out mt-[1px]",
+                "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out mt-[2px]",
                 localFilters.viewMode === "detailed" ? "translate-x-4" : "translate-x-0.5"
               )}
             />
           </button>
-          <label className="text-[11px] font-medium text-[#2B302B] cursor-pointer">
-            Detailed
-          </label>
+          <span className="text-xs font-medium text-[#1F2622] cursor-pointer">
+            Summary / Detailed
+          </span>
         </div>
 
         {/* Export CSV Button */}
@@ -217,7 +214,7 @@ export function FilterBar({
           variant="default"
           size="sm"
           onClick={onExportCsv}
-          className="h-8 px-3 text-xs bg-[#2B302B] text-white hover:bg-[#1b1f1b] gap-1.5"
+          className="h-8 px-3.5 text-xs font-semibold bg-[#1F2622] text-white hover:bg-[#2A342E] rounded-lg gap-1.5 transition-colors shadow-none"
         >
           <Download className="w-3.5 h-3.5" />
           Export CSV
@@ -226,4 +223,3 @@ export function FilterBar({
     </div>
   );
 }
-

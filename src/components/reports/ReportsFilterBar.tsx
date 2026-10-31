@@ -8,13 +8,13 @@ import { ReportTab } from "@/types";
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#D3E3D3] border border-[#B9CBB9] rounded-[3px] text-[11px] font-semibold text-[#2B302B] font-mono">
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#EBF1EA] border border-[#D5DDD2] rounded-full text-xs font-semibold text-[#1F2622]">
       {label}
       <button
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${label} filter`}
-        className="text-[#8A968A] hover:text-[#F57B4A] transition-colors leading-none"
+        className="text-[#8C9B8E] hover:text-[#F27B4B] transition-colors leading-none font-bold"
       >
         ×
       </button>
@@ -145,4 +145,3 @@ export function ReportsFilterBar({ tab }: ReportsFilterBarProps) {
     </div>
   );
 }
-

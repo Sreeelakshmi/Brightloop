@@ -4,76 +4,76 @@
 
 @layer base {
   :root {
-    /* Primary Background: #DCE9DF (soft sage) */
-    --background: 134 23% 89%;
-    /* Primary Text: #202923 */
-    --foreground: 140 12% 14%;
+    /* Primary Background: #E4ECE1 (pale sage green) */
+    --background: 103 19% 90%;
+    /* Primary Text: #1F2622 (dark green-black charcoal) */
+    --foreground: 143 10% 13%;
 
     /* Surface / Cards: #FFFFFF */
     --card: 0 0% 100%;
-    --card-foreground: 140 12% 14%;
+    --card-foreground: 143 10% 13%;
 
     /* Popover Surfaces: #FFFFFF */
     --popover: 0 0% 100%;
-    --popover-foreground: 140 12% 14%;
+    --popover-foreground: 143 10% 13%;
 
-    /* Accent Coral: #FA8257 (CTA Buttons, active rings, key accents) */
-    --primary: 16 94% 66%;
+    /* Primary: Charcoal #1F2622 for headings, primary buttons, dark card */
+    --primary: 143 10% 13%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary Sage: #8F9F94 */
-    --secondary: 139 8% 59%;
-    --secondary-foreground: 140 12% 14%;
+    /* Secondary: Muted Sage #8C9B8E */
+    --secondary: 128 7% 58%;
+    --secondary-foreground: 143 10% 13%;
 
-    /* Muted tint / Borders: #D4DED6 */
-    --muted: 132 14% 85%;
-    --muted-foreground: 139 8% 42%;
+    /* Muted Panel / Table Header: #DDE5DB */
+    --muted: 107 11% 87%;
+    --muted-foreground: 127 6% 43%;
 
-    /* Accent: #FA8257 */
-    --accent: 16 94% 66%;
+    /* Accent Orange: #F27B4B for attention only (overdue, alerts, marker) */
+    --accent: 17 87% 62%;
     --accent-foreground: 0 0% 100%;
 
-    /* Destructive alert */
-    --destructive: 0 84.2% 60.2%;
+    /* Destructive alert uses Orange accent */
+    --destructive: 17 87% 62%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Thin borders: #D4DED6 */
-    --border: 132 14% 85%;
-    --input: 132 14% 85%;
-    --ring: 16 94% 66%;
+    /* Borders: #D5DDD2 */
+    --border: 105 13% 85%;
+    --input: 105 13% 85%;
+    --ring: 128 7% 58%;
 
-    /* Rounded corners: 8px (0.5rem) */
-    --radius: 0.5rem;
+    /* Rounded corners: 12px (rounded-xl) */
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 140 14% 10%;
-    --foreground: 134 23% 92%;
+    --background: 143 10% 10%;
+    --foreground: 103 19% 90%;
 
-    --card: 140 14% 13%;
-    --card-foreground: 134 23% 92%;
+    --card: 143 10% 13%;
+    --card-foreground: 103 19% 90%;
 
-    --popover: 140 14% 13%;
-    --popover-foreground: 134 23% 92%;
+    --popover: 143 10% 13%;
+    --popover-foreground: 103 19% 90%;
 
-    --primary: 16 94% 66%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 103 19% 90%;
+    --primary-foreground: 143 10% 13%;
 
-    --secondary: 139 8% 25%;
-    --secondary-foreground: 134 23% 92%;
+    --secondary: 128 7% 40%;
+    --secondary-foreground: 103 19% 90%;
 
-    --muted: 139 8% 20%;
-    --muted-foreground: 139 8% 65%;
+    --muted: 143 10% 18%;
+    --muted-foreground: 128 7% 65%;
 
-    --accent: 16 94% 66%;
+    --accent: 17 87% 62%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 17 87% 62%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 139 8% 22%;
-    --input: 139 8% 22%;
-    --ring: 16 94% 66%;
+    --border: 143 10% 20%;
+    --input: 143 10% 20%;
+    --ring: 128 7% 58%;
   }
 }
 
@@ -82,6 +82,6 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased font-sans;
+    @apply bg-[#E4ECE1] text-[#1F2622] antialiased font-sans;
   }
 }

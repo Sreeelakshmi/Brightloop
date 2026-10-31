@@ -20,17 +20,17 @@ const variantStyles: Record<
   { bannerBg: string; bannerText: string; accentValueText?: string }
 > = {
   charcoal: {
-    bannerBg: "bg-[#2B302B]",
+    bannerBg: "bg-[#1F2622]",
     bannerText: "text-white",
   },
   grey: {
-    bannerBg: "bg-[#8A968A]",
+    bannerBg: "bg-[#8C9B8E]",
     bannerText: "text-white",
   },
   orange: {
-    bannerBg: "bg-[#F57B4A]",
+    bannerBg: "bg-[#F27B4B]",
     bannerText: "text-white",
-    accentValueText: "text-[#F57B4A]",
+    accentValueText: "text-[#F27B4B]",
   },
 };
 
@@ -56,26 +56,26 @@ export function StatCard({
     <div
       onClick={onClick}
       className={cn(
-        "bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] overflow-hidden flex flex-col justify-between shadow-none transition-all",
-        onClick && "cursor-pointer hover:border-[#2B302B]",
+        "bg-white border border-[#D5DDD2] rounded-xl overflow-hidden flex flex-col justify-between shadow-sm transition-all",
+        onClick && "cursor-pointer hover:border-[#1F2622]",
         className
       )}
     >
       {/* Top Colored Bar / Header */}
       <div
         className={cn(
-          "px-3.5 py-1.5 flex items-center justify-between transition-colors",
+          "px-4 py-2 flex items-center justify-between transition-colors",
           style.bannerBg,
           style.bannerText
         )}
       >
-        <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest font-mono select-none">
+        <span className="text-[11px] font-bold uppercase tracking-widest font-mono select-none">
           {label}
         </span>
         {Icon ? (
           <Icon className="w-3.5 h-3.5 opacity-90 shrink-0" />
         ) : (
-          <span className="w-2 h-2 rounded-[1px] border border-white/60 inline-block shrink-0" />
+          <span className="w-2.5 h-2.5 rounded-[1px] border border-white/70 inline-block shrink-0" />
         )}
       </div>
 
@@ -83,14 +83,14 @@ export function StatCard({
       <div className="p-4 sm:p-5 flex flex-col justify-center gap-1">
         <div
           className={cn(
-            "text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#2B302B] leading-none",
-            highlightValue || normalizedVariant === "orange" ? "text-[#F57B4A]" : ""
+            "text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#1F2622] leading-none",
+            highlightValue || normalizedVariant === "orange" ? "text-[#F27B4B]" : ""
           )}
         >
           {value}
         </div>
         {caption && (
-          <div className="text-[11px] sm:text-xs font-medium text-[#8A968A] tracking-normal mt-1 leading-snug">
+          <div className="text-xs font-medium text-[#8C9B8E] tracking-normal mt-1 leading-snug">
             {caption}
           </div>
         )}
@@ -98,4 +98,3 @@ export function StatCard({
     </div>
   );
 }
-

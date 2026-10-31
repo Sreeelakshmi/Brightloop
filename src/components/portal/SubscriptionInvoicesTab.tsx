@@ -11,68 +11,68 @@ interface SubscriptionInvoicesTabProps {
 
 export function SubscriptionInvoicesTab({ invoices }: SubscriptionInvoicesTabProps) {
   return (
-    <div className="bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] p-5 shadow-none space-y-4">
-      <div className="flex items-center justify-between pb-2 border-b border-[#B9CBB9]">
-        <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8A968A]">
+    <div className="bg-white border border-[#D5DDD2] rounded-xl p-5 shadow-none space-y-4">
+      <div className="flex items-center justify-between pb-2 border-b border-[#D5DDD2]">
+        <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8C9B8E]">
           ASSOCIATED INVOICES // BILLING HISTORY
         </div>
-        <span className="text-xs font-mono text-[#8A968A]">
+        <span className="text-xs font-mono text-[#8C9B8E]">
           {invoices.length} invoices found
         </span>
       </div>
 
       {invoices.length === 0 ? (
-        <div className="py-8 text-center text-xs font-mono text-[#8A968A]">
+        <div className="py-8 text-center text-xs font-mono text-[#8C9B8E]">
           No invoices have been billed for this subscription yet.
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#D3E3D3] border-b border-[#B9CBB9]">
-                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B]">
+              <tr className="bg-[#DDE5DB] border-b border-[#D5DDD2]">
+                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622]">
                   Invoice No.
                 </th>
-                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B]">
+                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622]">
                   Issue Date
                 </th>
-                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B]">
+                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622]">
                   Due Date
                 </th>
-                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B] text-right">
+                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622] text-right">
                   Total
                 </th>
-                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B] text-right">
+                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622] text-right">
                   Balance
                 </th>
-                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B302B] text-center">
+                <th className="px-3.5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1F2622] text-center">
                   Status
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#B9CBB9]/60">
+            <tbody className="divide-y divide-[#D5DDD2]/60">
               {invoices.map((inv) => {
                 const balance = inv.balance ?? 0;
                 return (
                   <tr
                     key={inv.id}
-                    className="bg-white hover:bg-[#E4EEE4]/40 transition-colors"
+                    className="bg-white hover:bg-[#E4ECE1]/40 transition-colors"
                   >
-                    <td className="px-3.5 py-3 text-xs font-mono font-bold text-[#2B302B]">
+                    <td className="px-3.5 py-3 text-xs font-mono font-bold text-[#1F2622]">
                       {inv.invoiceNo || inv.invoiceNumber || inv.id}
                     </td>
-                    <td className="px-3.5 py-3 text-xs font-mono text-[#8A968A]">
+                    <td className="px-3.5 py-3 text-xs font-mono text-[#8C9B8E]">
                       {formatDate(inv.issueDate)}
                     </td>
-                    <td className="px-3.5 py-3 text-xs font-mono text-[#8A968A]">
+                    <td className="px-3.5 py-3 text-xs font-mono text-[#8C9B8E]">
                       {formatDate(inv.dueDate)}
                     </td>
-                    <td className="px-3.5 py-3 text-xs font-mono font-bold text-[#2B302B] text-right tabular-nums">
+                    <td className="px-3.5 py-3 text-xs font-mono font-bold text-[#1F2622] text-right tabular-nums">
                       {formatMoney(inv.totalAmount ?? 0)}
                     </td>
                     <td
                       className={`px-3.5 py-3 text-xs font-mono text-right tabular-nums ${
-                        balance > 0 ? "font-bold text-[#F57B4A]" : "text-[#8A968A]"
+                        balance > 0 ? "font-bold text-[#F27B4B]" : "text-[#8C9B8E]"
                       }`}
                     >
                       {formatMoney(balance)}

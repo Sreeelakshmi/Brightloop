@@ -13,68 +13,68 @@ export function RenewalInfoPanel({ subscription }: RenewalInfoPanelProps) {
   const billingCycle = subscription.plan?.billingCycle || "monthly";
 
   return (
-    <div className="bg-white border-[1.5px] border-[#B9CBB9] rounded-[3px] p-5 shadow-none">
-      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8A968A] mb-4 pb-2 border-b border-[#B9CBB9]">
+    <div className="bg-white border border-[#D5DDD2] rounded-xl p-5 shadow-none">
+      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8C9B8E] mb-4 pb-2 border-b border-[#D5DDD2]">
         RENEWAL & BILLING TERMS // OVERVIEW
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Next Billing Date */}
-        <div className="bg-[#E4EEE4]/30 p-3 rounded-[2px] border border-[#B9CBB9]/60">
-          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8A968A]">
+        <div className="bg-[#E4ECE1]/30 p-3 rounded-lg border border-[#D5DDD2]/60">
+          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8C9B8E]">
             NEXT BILLING DATE
           </div>
-          <div className="text-sm font-mono font-bold text-[#2B302B] mt-1">
+          <div className="text-sm font-mono font-bold text-[#1F2622] mt-1">
             {formatDate(subscription.renewalDate || subscription.endDate)}
           </div>
-          <div className="text-[10px] font-mono text-[#8A968A] mt-0.5">
+          <div className="text-[10px] font-mono text-[#8C9B8E] mt-0.5">
             Automatic schedule
           </div>
         </div>
 
         {/* Expiry Date */}
-        <div className="bg-[#E4EEE4]/30 p-3 rounded-[2px] border border-[#B9CBB9]/60">
-          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8A968A]">
+        <div className="bg-[#E4ECE1]/30 p-3 rounded-lg border border-[#D5DDD2]/60">
+          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8C9B8E]">
             EXPIRY DATE
           </div>
-          <div className="text-sm font-mono font-bold text-[#2B302B] mt-1">
+          <div className="text-sm font-mono font-bold text-[#1F2622] mt-1">
             {formatDate(subscription.endDate)}
           </div>
-          <div className="text-[10px] font-mono text-[#8A968A] mt-0.5">
+          <div className="text-[10px] font-mono text-[#8C9B8E] mt-0.5">
             Contract termination
           </div>
         </div>
 
         {/* Renewable */}
-        <div className="bg-[#E4EEE4]/30 p-3 rounded-[2px] border border-[#B9CBB9]/60">
-          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8A968A]">
+        <div className="bg-[#E4ECE1]/30 p-3 rounded-lg border border-[#D5DDD2]/60">
+          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8C9B8E]">
             RENEWABLE
           </div>
           <div className="flex items-center gap-1.5 mt-1">
             <span
-              className={`inline-flex items-center px-2 py-0.5 text-xs font-mono font-bold rounded-[2px] ${
+              className={`inline-flex items-center px-2 py-0.5 text-xs font-mono font-bold rounded-lg ${
                 isRenewable
-                  ? "bg-[#D3E3D3] text-[#2B302B]"
-                  : "bg-[#8A968A]/20 text-[#8A968A]"
+                  ? "bg-[#DDE5DB] text-[#1F2622]"
+                  : "bg-[#8C9B8E]/20 text-[#8C9B8E]"
               }`}
             >
               {isRenewable ? "YES" : "NO"}
             </span>
           </div>
-          <div className="text-[10px] font-mono text-[#8A968A] mt-0.5">
+          <div className="text-[10px] font-mono text-[#8C9B8E] mt-0.5">
             {isRenewable ? "Self-service extension" : "Plan locked"}
           </div>
         </div>
 
         {/* Amount per cycle */}
-        <div className="bg-[#E4EEE4]/30 p-3 rounded-[2px] border border-[#B9CBB9]/60">
-          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8A968A]">
+        <div className="bg-[#E4ECE1]/30 p-3 rounded-lg border border-[#D5DDD2]/60">
+          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8C9B8E]">
             AMOUNT PER CYCLE
           </div>
-          <div className="text-sm font-mono font-bold text-[#2B302B] mt-1 tabular-nums">
+          <div className="text-sm font-mono font-bold text-[#1F2622] mt-1 tabular-nums">
             {formatMoney(subscription.totalAmount)}
           </div>
-          <div className="text-[10px] font-mono text-[#8A968A] mt-0.5 capitalize">
+          <div className="text-[10px] font-mono text-[#8C9B8E] mt-0.5 capitalize">
             per {billingCycle}
           </div>
         </div>

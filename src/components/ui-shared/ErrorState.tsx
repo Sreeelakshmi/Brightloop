@@ -13,7 +13,7 @@ export interface ErrorStateProps {
 
 /**
  * ErrorState Component
- * Telemetry-styled error reporting box with single accent orange highlights.
+ * Error reporting box with Brightloop orange accent.
  */
 export function ErrorState({
   title = "Telemetry Signal Disrupted",
@@ -25,23 +25,23 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        "bg-white border-[1.5px] border-[#F57B4A] rounded-[3px] p-6 sm:p-8 flex flex-col items-center text-center max-w-lg mx-auto shadow-none",
+        "bg-white border border-[#F27B4B] rounded-xl p-6 sm:p-8 flex flex-col items-center text-center max-w-lg mx-auto shadow-sm",
         className
       )}
     >
-      <div className="w-11 h-11 rounded-[2px] bg-[#F57B4A] text-white flex items-center justify-center mb-3">
+      <div className="w-12 h-12 rounded-xl bg-[#FDECE5] text-[#F27B4B] flex items-center justify-center mb-3">
         <AlertTriangle className="w-6 h-6 stroke-[2]" />
       </div>
 
-      <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#F57B4A] mb-1">
-        SYSTEM FAULT // {errorCode}
+      <div className="text-[10px] font-bold uppercase tracking-widest text-[#F27B4B] mb-1">
+        ERROR // {errorCode}
       </div>
 
-      <h3 className="text-base font-bold uppercase tracking-tight text-[#2B302B] mb-1">
+      <h3 className="text-base font-bold text-[#1F2622] mb-1">
         {title}
       </h3>
 
-      <p className="text-xs text-[#8A968A] leading-relaxed max-w-sm mb-4">
+      <p className="text-xs text-[#8C9B8E] leading-relaxed max-w-sm mb-4">
         {message}
       </p>
 
@@ -53,10 +53,9 @@ export function ErrorState({
           className="text-xs gap-1.5"
         >
           <RotateCcw className="w-3.5 h-3.5" />
-          Retry Connection
+          Retry
         </Button>
       )}
     </div>
   );
 }
-

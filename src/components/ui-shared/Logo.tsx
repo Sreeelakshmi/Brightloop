@@ -19,7 +19,7 @@ export function HexagonClusterIcon({ className = "w-7 h-7" }: { className?: stri
       viewBox="0 0 32 32"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("shrink-0 text-[#2B302B]", className)}
+      className={cn("shrink-0 text-[#1F2622]", className)}
       aria-hidden="true"
     >
       {/* Primary Top Hexagon */}
@@ -49,7 +49,7 @@ export function HexagonClusterIcon({ className = "w-7 h-7" }: { className?: stri
         strokeOpacity="0.85"
       />
       {/* Center telemetry focal node */}
-      <circle cx="16" cy="18" r="1.5" fill="#F57B4A" />
+      <circle cx="16" cy="18" r="1.5" fill="#F27B4B" />
     </svg>
   );
 }
@@ -68,29 +68,41 @@ export function Logo({
     sm: {
       icon: "w-5 h-5",
       title: "text-base tracking-tight",
-      subtitle: "text-[9px] -mt-0.5",
+      subtitle: "text-[9px]",
     },
     default: {
       icon: "w-7 h-7",
-      title: "text-lg font-extrabold tracking-tight",
-      subtitle: "text-[10px] -mt-0.5 tracking-tight font-medium",
+      title: "text-lg font-black tracking-tight",
+      subtitle: "text-[10px]",
     },
     lg: {
       icon: "w-9 h-9",
       title: "text-2xl font-black tracking-tight",
-      subtitle: "text-xs font-medium tracking-normal",
+      subtitle: "text-xs",
     },
-  }[size];
+  };
+
+  const selectedSize = sizeClasses[size];
 
   const content = (
-    <div className={cn("flex items-center gap-2.5 select-none", className)}>
-      <HexagonClusterIcon className={sizeClasses.icon} />
-      <div className="flex flex-col">
-        <span className={cn("font-bold text-[#2B302B] leading-tight", sizeClasses.title)}>
+    <div className={cn("inline-flex items-center gap-2.5 group select-none", className)}>
+      <HexagonClusterIcon className={cn(selectedSize.icon, "text-[#1F2622]")} />
+      <div className="flex flex-col leading-none">
+        <span
+          className={cn(
+            "font-black text-[#1F2622] uppercase tracking-tight group-hover:text-[#F27B4B] transition-colors",
+            selectedSize.title
+          )}
+        >
           Brightloop
         </span>
         {showSubtitle && (
-          <span className={cn("text-[#8A968A] uppercase font-mono tracking-wider", sizeClasses.subtitle)}>
+          <span
+            className={cn(
+              "font-medium text-[#8C9B8E] tracking-tight mt-0.5",
+              selectedSize.subtitle
+            )}
+          >
             Subscription Control System
           </span>
         )}
@@ -100,7 +112,7 @@ export function Logo({
 
   if (href) {
     return (
-      <Link href={href} className="inline-flex hover:opacity-95 transition-opacity">
+      <Link href={href} className="inline-block focus:outline-none">
         {content}
       </Link>
     );
@@ -108,4 +120,3 @@ export function Logo({
 
   return content;
 }
-
