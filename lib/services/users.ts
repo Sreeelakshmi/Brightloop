@@ -165,3 +165,4 @@ export async function updateStaffStatus(
   // await supabase.from('profiles').update({ status }).eq('id', staffId);
   throw new Error("Live Supabase staff status update not configured.");
 }
+

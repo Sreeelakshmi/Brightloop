@@ -142,3 +142,4 @@ export function generateSeedUsers(): MockUser[] {
 
   return [adminUser, ...staffUsers, ...customerUsers];
 }
+

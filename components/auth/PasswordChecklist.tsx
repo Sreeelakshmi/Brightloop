@@ -60,3 +60,4 @@ export function PasswordChecklist({ password = "", className }: PasswordChecklis
     </div>
   );
 }
+
