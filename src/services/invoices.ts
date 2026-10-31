@@ -233,7 +233,7 @@ export async function getInvoices(filters?: InvoiceFilters): Promise<DetailedInv
     return [];
   }
 
-  let mapped = data.map(mapDbInvoice);
+  let mapped: DetailedInvoice[] = data.map(mapDbInvoice);
 
   if (filters?.search && filters.search.trim().length > 0) {
     const q = filters.search.toLowerCase().trim();

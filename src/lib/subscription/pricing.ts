@@ -2,11 +2,12 @@
  * Brightloop Subscription Pricing & Line Calculations
  *
  * Provides financial calculations for contract lines and subscription totals.
- * All amounts are computed and rounded to 2 decimal places to prevent IEEE 754 float drift.
- *
- * NOTE: The unit_price persisted on a `subscription_lines` row already includes
- * any variant surcharge (variantExtra).
+ * Integrated with Member 3's financial math and taxation engine.
  */
+
+import { rupeesToPaise, paiseToRupees, calculateLineItem } from "@/lib/billing/math";
+import { getTaxRuleByCode } from "@/services/taxes";
+import { getDiscountByCode, evaluateDiscountEligibility } from "@/services/discounts";
 
 export interface PricingLineInput {
   unitPrice: number;
@@ -57,13 +58,31 @@ export function calculateSubscriptionTotal(
 }
 
 /**
- * Interface stub for regional taxes and discount computations.
- *
- * TODO(member-3): Member 3 on `feature/billing-payments` owns the full tax and discount
- * engine. When integrated, wire this stub into Member 3's billing calculation services.
+ * Real tax and discount engine backed by Member 3's billing calculation services.
  */
+export async function computeLineTaxes(lineAmountRupees: number, taxCode: string = "GST_18"): Promise<number> {
+  const rule = await getTaxRuleByCode(taxCode);
+  const rate = rule?.rate ?? 18;
+  const linePaise = rupeesToPaise(lineAmountRupees);
+  const item = calculateLineItem({
+    quantity: 1,
+    unitPricePaise: linePaise,
+    taxRatePercent: rate,
+  });
+  return paiseToRupees(item.taxPaise);
+}
+
+export async function applyDiscountToSubtotal(subtotalRupees: number, couponCode: string): Promise<number> {
+  const discount = await getDiscountByCode(couponCode);
+  if (!discount) return 0;
+  const subtotalPaise = rupeesToPaise(subtotalRupees);
+  const evalResult = evaluateDiscountEligibility(discount, subtotalPaise, 1);
+  return evalResult.valid ? paiseToRupees(evalResult.discountPaise) : 0;
+}
+
 export interface TaxAndDiscountEngine {
   computeLineTaxes?: (lineAmount: number, taxId?: string) => Promise<number>;
   applyDiscounts?: (subtotal: number, couponCode?: string) => Promise<number>;
 }
 
+export { rupeesToPaise, paiseToRupees, calculateLineItem };

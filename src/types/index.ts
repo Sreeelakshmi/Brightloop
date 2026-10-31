@@ -115,9 +115,9 @@ export interface Invoice {
   billingPeriodEnd?: string | null;
   status: InvoiceStatus;
   currency: string;
-  subtotal: number;
-  taxAmount: number;
-  discountAmount: number;
+  subtotal?: number;
+  taxAmount?: number;
+  discountAmount?: number;
   amountDue: number;
   amountPaid: number;
   dueDate: string;
@@ -126,20 +126,7 @@ export interface Invoice {
   pdfUrl?: string | null;
   createdAt: string;
   updatedAt?: string;
-  items?: InvoiceItem[];
-}
-
-export interface InvoiceItem {
-  id: string;
-  invoiceId: string;
-  productVariantId?: string | null;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  taxAmount: number;
-  discountAmount: number;
-  totalAmount: number;
-  createdAt: string;
+  items?: any[];
 }
 
 export interface Payment {
