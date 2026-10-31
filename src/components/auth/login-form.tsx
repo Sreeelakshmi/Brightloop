@@ -76,8 +76,7 @@ export function LoginForm({
         setError(res.error || "Invalid login credentials. Please try again.");
         setLoading(false);
       } else if (res.redirectUrl) {
-        router.push(res.redirectUrl);
-        router.refresh();
+        window.location.href = res.redirectUrl;
       }
     } catch (err: any) {
       setError(err?.message || "An unexpected error occurred during sign in.");
