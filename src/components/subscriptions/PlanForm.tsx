@@ -153,20 +153,46 @@ export function PlanForm({ initialPlan, onSuccess }: PlanFormProps) {
           </div>
         </div>
 
-        <div className="pt-3 border-t border-[#D5DDD2] space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-[#1F2622]">Plan Lifecycle Rules</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <label className="flex items-center gap-2 cursor-pointer font-medium text-[#1F2622]">
-              <input type="checkbox" {...register("autoClose")} className="rounded border-[#D5DDD2] text-[#1F2622] focus:ring-[#1F2622]" /> Auto Close
+        <div className="pt-3 border-t border-[#D5DDD2] space-y-3">
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wider text-[#1F2622]">Plan Lifecycle Rules</label>
+            <p className="text-xs text-[#657367]">Toggle contract behaviors for automated renewals and client management</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+              <div className="relative inline-flex items-center">
+                <input type="checkbox" {...register("autoClose")} className="sr-only peer" />
+                <div className="w-8 h-4 bg-[#D5DDD2] rounded-full peer-focus:outline-none peer peer-checked:bg-[#1F2622] transition-colors" />
+                <div className="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4 shadow-sm" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#1F2622] group-hover:text-black">Auto Close</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer font-medium text-[#1F2622]">
-              <input type="checkbox" {...register("closable")} className="rounded border-[#D5DDD2] text-[#1F2622] focus:ring-[#1F2622]" /> Closable
+
+            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+              <div className="relative inline-flex items-center">
+                <input type="checkbox" {...register("closable")} className="sr-only peer" />
+                <div className="w-8 h-4 bg-[#D5DDD2] rounded-full peer-focus:outline-none peer peer-checked:bg-[#1F2622] transition-colors" />
+                <div className="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4 shadow-sm" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#1F2622] group-hover:text-black">Closable</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer font-medium text-[#1F2622]">
-              <input type="checkbox" {...register("pausable")} className="rounded border-[#D5DDD2] text-[#1F2622] focus:ring-[#1F2622]" /> Pausable
+
+            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+              <div className="relative inline-flex items-center">
+                <input type="checkbox" {...register("pausable")} className="sr-only peer" />
+                <div className="w-8 h-4 bg-[#D5DDD2] rounded-full peer-focus:outline-none peer peer-checked:bg-[#1F2622] transition-colors" />
+                <div className="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4 shadow-sm" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#1F2622] group-hover:text-black">Pausable</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer font-medium text-[#1F2622]">
-              <input type="checkbox" {...register("renewable")} className="rounded border-[#D5DDD2] text-[#1F2622] focus:ring-[#1F2622]" /> Renewable
+
+            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+              <div className="relative inline-flex items-center">
+                <input type="checkbox" {...register("renewable")} className="sr-only peer" />
+                <div className="w-8 h-4 bg-[#D5DDD2] rounded-full peer-focus:outline-none peer peer-checked:bg-[#1F2622] transition-colors" />
+                <div className="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4 shadow-sm" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#1F2622] group-hover:text-black">Renewable</span>
             </label>
           </div>
         </div>

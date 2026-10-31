@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProductTable } from "@/components/subscriptions/ProductTable";
-import { THEME } from "@/components/subscriptions/theme";
+import { PageHeader } from "@/components/subscriptions/PageHeader";
 import type { ProductWithVariants } from "@/types/catalog";
 import type { UserRole } from "@/types";
 
@@ -53,12 +53,11 @@ export function ProductsListClient({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className={`text-2xl ${THEME.primaryDark.heading}`}>Products Catalog</h1>
-        <p className="text-xs uppercase tracking-wider text-[#657367]">
-          Manage digital goods, services, and multi-tier product variants.
-        </p>
-      </div>
+      <PageHeader
+        title="PRODUCT CATALOG"
+        subtitle="Manage digital goods, services, and multi-tier product variants."
+        logDate="31.10.2026"
+      />
 
       <ProductTable
         products={initialProducts}

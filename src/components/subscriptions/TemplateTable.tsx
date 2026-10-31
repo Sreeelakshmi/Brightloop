@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Plus, Edit2, Trash2, Search, FileSpreadsheet } from "lucide-react";
+import { Plus, Edit2, Trash2, FileSpreadsheet } from "lucide-react";
 import { THEME } from "./theme";
+import { FilterBar } from "./FilterBar";
 import { deleteTemplateAction } from "@/app/(dashboard)/quotations/actions";
 import type { QuotationTemplateWithDetails } from "@/types/subscription-services";
 import type { UserRole } from "@/types";
@@ -52,28 +53,24 @@ export function TemplateTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#8C9B8E]" />
-          <input
-            type="text"
-            placeholder="Search proposal templates..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className={`w-full pl-9 ${THEME.input}`}
-          />
-        </div>
-        {canEdit && (
-          <Link href="/quotations/new">
-            <button className={`px-4 py-2 ${THEME.primaryDark.button} flex items-center gap-1.5 text-xs tracking-wider`}>
-              <Plus className="w-4 h-4" /> New Template
-            </button>
-          </Link>
-        )}
-      </div>
+      <FilterBar
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        searchPlaceholder="Search proposal templates..."
+        onReset={() => onSearchChange("")}
+        actionButton={
+          canEdit ? (
+            <Link href="/quotations/new">
+              <button className={`px-4 py-2 ${THEME.primaryDark.button} flex items-center gap-1.5 text-xs uppercase tracking-wider whitespace-nowrap`}>
+                <Plus className="w-4 h-4" /> New Template
+              </button>
+            </Link>
+          ) : undefined
+        }
+      />
 
       {deleteError && (
-        <div className="p-3 rounded-lg bg-[#FDEEE7] text-[#D95522] text-sm border border-[#F27B4B]">{deleteError}</div>
+        <div className="p-3 rounded-xl bg-[#FDEEE7] text-[#D95522] text-sm border border-[#F27B4B]">{deleteError}</div>
       )}
 
       {templates.length === 0 ? (
@@ -103,7 +100,7 @@ export function TemplateTable({
                   <td className="px-4 py-3 text-[#657367]">{t.plan?.name ?? "—"}</td>
                   <td className="px-4 py-3 font-mono">{t.validityDays} days</td>
                   <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-[#DDE5DB] text-[#1F2622] font-medium">
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] bg-[#DDE5DB] text-[#1F2622] font-semibold uppercase tracking-wider">
                       {t.lines?.length ?? 0} items
                     </span>
                   </td>
@@ -117,7 +114,7 @@ export function TemplateTable({
                       <button
                         onClick={() => handleDelete(t.id, t.name)}
                         disabled={deletingId === t.id}
-                        className="p-1.5 hover:text-[#F27B4B] text-[#8C9B8E]"
+                        className="p-1.5 hover:text-[#F27B4B] text-[#8C9B8E] transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -131,11 +128,36 @@ export function TemplateTable({
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-[#657367] pt-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-[#657367] pt-3 gap-3">
           <span>Page {currentPage} of {totalPages} ({total} templates)</span>
-          <div className="flex gap-2">
-            <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage <= 1} className={`px-3 py-1 ${THEME.secondaryButton}`}>Prev</button>
-            <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage >= totalPages} className={`px-3 py-1 ${THEME.secondaryButton}`}>Next</button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className={`px-3 py-1.5 ${THEME.secondaryButton} text-xs disabled:opacity-40`}
+            >
+              Prev
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => onPageChange(pageNum)}
+                className={`w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center transition-colors ${
+                  currentPage === pageNum
+                    ? "bg-[#1F2622] text-white"
+                    : "bg-white border border-[#D5DDD2] text-[#1F2622] hover:bg-[#F3F7F2]"
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              className={`px-3 py-1.5 ${THEME.secondaryButton} text-xs disabled:opacity-40`}
+            >
+              Next
+            </button>
           </div>
         </div>
       )}

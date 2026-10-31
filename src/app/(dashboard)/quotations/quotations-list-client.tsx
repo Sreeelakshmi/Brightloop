@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TemplateTable } from "@/components/subscriptions/TemplateTable";
-import { THEME } from "@/components/subscriptions/theme";
+import { PageHeader } from "@/components/subscriptions/PageHeader";
 import type { QuotationTemplateWithDetails } from "@/types/subscription-services";
 import type { UserRole } from "@/types";
 
@@ -50,12 +50,11 @@ export function QuotationsListClient({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className={`text-2xl ${THEME.primaryDark.heading}`}>Proposal Templates</h1>
-        <p className="text-xs text-[#657367]">
-          Manage pre-configured quotation templates, validity windows, and default line packages.
-        </p>
-      </div>
+      <PageHeader
+        title="PROPOSAL TEMPLATES"
+        subtitle="Manage pre-configured quotation templates, validity windows, and default line packages."
+        logDate="31.10.2026"
+      />
 
       <TemplateTable
         templates={initialTemplates}

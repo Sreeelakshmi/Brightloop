@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SubscriptionTable } from "@/components/subscriptions/SubscriptionTable";
-import { THEME } from "@/components/subscriptions/theme";
+import { PageHeader } from "@/components/subscriptions/PageHeader";
 import type { SubscriptionWithDetails } from "@/types/subscription-services";
 import type { SubscriptionStatus, UserRole } from "@/types";
 
@@ -64,12 +64,11 @@ export function SubscriptionsListClient({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className={`text-2xl ${THEME.primaryDark.heading}`}>Subscriptions Overview</h1>
-        <p className="text-xs text-[#657367]">
-          Monitor active recurring agreements, execute state machine transitions, and manage contract lifecycles.
-        </p>
-      </div>
+      <PageHeader
+        title="SUBSCRIPTIONS OVERVIEW"
+        subtitle="Monitor active recurring agreements, execute state machine transitions, and manage contract lifecycles."
+        logDate="31.10.2026"
+      />
 
       <SubscriptionTable
         subscriptions={initialSubscriptions}
