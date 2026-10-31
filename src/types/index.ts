@@ -2,19 +2,15 @@
  * Brightloop Shared TypeScript Type Definitions
  *
  * Core entities and shared domain vocabulary across hackathon team members.
+ * Subscription-domain types (Product, ProductVariant, Plan, QuotationTemplate,
+ * Subscription, SubscriptionLine) are defined in `./subscription` and
+ * re-exported here.
  */
 
-export type UserRole = "admin" | "staff" | "customer";
+export type UserRole = "owner" | "admin" | "staff" | "finance" | "support" | "customer";
 
+/** Billing cycle used by invoicing (subscription plans use `BillingPeriod`). */
 export type BillingInterval = "month" | "quarter" | "year";
-
-export type SubscriptionStatus =
-  | "trialing"
-  | "active"
-  | "past_due"
-  | "canceled"
-  | "unpaid"
-  | "paused";
 
 export type InvoiceStatus =
   | "draft"
@@ -54,46 +50,6 @@ export interface Profile {
   phone?: string | null;
   role: UserRole;
   billingAddress?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  active: boolean;
-  metadata?: Record<string, unknown>;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface ProductVariant {
-  id: string;
-  productId: string;
-  name: string;
-  sku?: string | null;
-  description?: string | null;
-  active: boolean;
-  metadata?: Record<string, unknown>;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface Plan {
-  id: string;
-  productId: string;
-  name: string;
-  code: string;
-  description?: string | null;
-  interval: BillingInterval;
-  intervalCount?: number;
-  amount: number;
-  currency: string;
-  trialDays?: number;
-  active: boolean;
   metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt?: string;
@@ -178,35 +134,6 @@ export interface QuotationItem {
   createdAt: string;
 }
 
-export interface Subscription {
-  id: string;
-  customerId: string;
-  planId: string;
-  quotationId?: string | null;
-  status: SubscriptionStatus;
-  currentPeriodStart: string;
-  currentPeriodEnd: string;
-  trialStart?: string | null;
-  trialEnd?: string | null;
-  cancelAtPeriodEnd: boolean;
-  canceledAt?: string | null;
-  metadata?: Record<string, unknown>;
-  createdAt: string;
-  updatedAt?: string;
-  items?: SubscriptionItem[];
-}
-
-export interface SubscriptionItem {
-  id: string;
-  subscriptionId: string;
-  productVariantId?: string | null;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  createdAt: string;
-  updatedAt?: string;
-}
-
 export interface Invoice {
   id: string;
   invoiceNumber: string;
@@ -257,3 +184,6 @@ export interface Payment {
   createdAt: string;
   updatedAt?: string;
 }
+
+/* Subscription domain: products, variants, plans, quotations, subscriptions. */
+export * from "./subscription";
