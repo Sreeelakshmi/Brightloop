@@ -2,9 +2,10 @@
 
 import React from "react";
 import Link from "next/link";
-import { Plus, Search, Repeat, Eye } from "lucide-react";
+import { Plus, Repeat, Eye } from "lucide-react";
 import { THEME } from "./theme";
 import { StatusBadge } from "./StatusBadge";
+import { FilterBar } from "./FilterBar";
 import type { SubscriptionWithDetails } from "@/types/subscription-services";
 import type { SubscriptionStatus, UserRole } from "@/types";
 
@@ -49,23 +50,31 @@ export function SubscriptionTable({
 
   return (
     <div className="space-y-4">
-      {/* Filters & Actions */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#8C9B8E]" />
-            <input
-              type="text"
-              placeholder="Search contract #..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className={`w-full pl-9 ${THEME.input}`}
-            />
-          </div>
+      {/* Filters & Actions via FilterBar */}
+      <FilterBar
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        searchPlaceholder="Search contract #..."
+        onReset={() => {
+          onSearchChange("");
+          onStatusChange("");
+        }}
+        actionButton={
+          canCreate ? (
+            <Link href="/subscriptions/new">
+              <button className={`px-4 py-2 ${THEME.primaryDark.button} flex items-center gap-1.5 text-xs uppercase tracking-wider whitespace-nowrap`}>
+                <Plus className="w-4 h-4" /> New Contract
+              </button>
+            </Link>
+          ) : undefined
+        }
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#657367]">Status:</span>
           <select
             value={selectedStatus}
             onChange={(e) => onStatusChange(e.target.value as SubscriptionStatus | "")}
-            className={`w-40 capitalize ${THEME.input}`}
+            className={`w-36 capitalize ${THEME.input}`}
           >
             <option value="">All Statuses</option>
             {ALL_STATUSES.map((st) => (
@@ -73,15 +82,7 @@ export function SubscriptionTable({
             ))}
           </select>
         </div>
-
-        {canCreate && (
-          <Link href="/subscriptions/new">
-            <button className={`px-4 py-2 ${THEME.primaryDark.button} flex items-center gap-1.5 text-xs tracking-wider whitespace-nowrap`}>
-              <Plus className="w-4 h-4" /> New Contract
-            </button>
-          </Link>
-        )}
-      </div>
+      </FilterBar>
 
       {loading ? (
         <div className="p-12 text-center text-sm text-[#657367]">Loading subscriptions...</div>
@@ -129,11 +130,36 @@ export function SubscriptionTable({
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-[#657367] pt-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-[#657367] pt-3 gap-3">
           <span>Page {currentPage} of {totalPages} ({total} contracts)</span>
-          <div className="flex gap-2">
-            <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage <= 1} className={`px-3 py-1 ${THEME.secondaryButton}`}>Prev</button>
-            <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage >= totalPages} className={`px-3 py-1 ${THEME.secondaryButton}`}>Next</button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className={`px-3 py-1.5 ${THEME.secondaryButton} text-xs disabled:opacity-40`}
+            >
+              Prev
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => onPageChange(pageNum)}
+                className={`w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center transition-colors ${
+                  currentPage === pageNum
+                    ? "bg-[#1F2622] text-white"
+                    : "bg-white border border-[#D5DDD2] text-[#1F2622] hover:bg-[#F3F7F2]"
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              className={`px-3 py-1.5 ${THEME.secondaryButton} text-xs disabled:opacity-40`}
+            >
+              Next
+            </button>
           </div>
         </div>
       )}

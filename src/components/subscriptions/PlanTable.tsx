@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Edit2, Trash2, Search, Plus, Layers } from "lucide-react";
+import { Edit2, Trash2, Plus, Layers } from "lucide-react";
 import { THEME } from "./theme";
+import { FilterBar } from "./FilterBar";
 import { deletePlanAction } from "@/app/(dashboard)/plans/actions";
 import type { PlanWithId } from "@/types/catalog";
 import type { UserRole } from "@/types";
@@ -58,25 +59,21 @@ export function PlanTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#8C9B8E]" />
-          <input
-            type="text"
-            placeholder="Search plans..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className={`w-full pl-9 ${THEME.input}`}
-          />
-        </div>
-        {isAdmin && (
-          <Link href="/plans/new">
-            <button className={`px-4 py-2 ${THEME.primaryDark.button} flex items-center gap-1.5 text-xs tracking-wider whitespace-nowrap`}>
-              <Plus className="w-4 h-4" /> Add Plan
-            </button>
-          </Link>
-        )}
-      </div>
+      <FilterBar
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        searchPlaceholder="Search pricing plans..."
+        onReset={() => onSearchChange("")}
+        actionButton={
+          isAdmin ? (
+            <Link href="/plans/new">
+              <button className={`px-4 py-2 ${THEME.primaryDark.button} flex items-center gap-1.5 text-xs uppercase tracking-wider whitespace-nowrap`}>
+                <Plus className="w-4 h-4" /> Add Plan
+              </button>
+            </Link>
+          ) : undefined
+        }
+      />
 
       {deleteError && (
         <div className="p-3 bg-[#FDEEE7] text-[#D95522] border border-[#F27B4B] text-sm rounded-xl">{deleteError}</div>
@@ -154,20 +151,33 @@ export function PlanTable({
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-[#657367] pt-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-[#657367] pt-3 gap-3">
           <span>Showing page {currentPage} of {totalPages} ({total} total plans)</span>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage <= 1}
-              className={`px-3 py-1.5 ${THEME.secondaryButton} text-xs`}
+              className={`px-3 py-1.5 ${THEME.secondaryButton} text-xs disabled:opacity-40`}
             >
-              Previous
+              Prev
             </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => onPageChange(pageNum)}
+                className={`w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center transition-colors ${
+                  currentPage === pageNum
+                    ? "bg-[#1F2622] text-white"
+                    : "bg-white border border-[#D5DDD2] text-[#1F2622] hover:bg-[#F3F7F2]"
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
             <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage >= totalPages}
-              className={`px-3 py-1.5 ${THEME.secondaryButton} text-xs`}
+              className={`px-3 py-1.5 ${THEME.secondaryButton} text-xs disabled:opacity-40`}
             >
               Next
             </button>
