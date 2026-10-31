@@ -1,19 +1,50 @@
-import { PlaceholderModule } from "@/components/shared/placeholder-module";
+import { requireUser } from "@/lib/auth/require-user";
+import { listProducts } from "@/services/products.service";
+import { ProductsListClient } from "./products-list-client";
+import type { ProductWithVariants } from "@/types/catalog";
+import type { UserRole } from "@/types";
 
-export default function ProductsPage() {
+interface ProductsPageProps {
+  searchParams?: {
+    page?: string;
+    search?: string;
+  };
+}
+
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  const page = Number(searchParams?.page) || 1;
+  const search = searchParams?.search || "";
+  const pageSize = 20;
+
+  let role: UserRole = "customer";
+  try {
+    const user = await requireUser();
+    role = user.role;
+  } catch {
+    role = "customer";
+  }
+
+  let products: ProductWithVariants[] = [];
+  let total = 0;
+
+  try {
+    const result = await listProducts({ page, pageSize, search });
+    products = result.data;
+    total = result.total;
+  } catch (err: unknown) {
+    // Return empty state with error handled gracefully in UI
+    products = [];
+    total = 0;
+  }
+
   return (
-    <PlaceholderModule
-      title="Products Management"
-      description="Define and manage digital products, tiers, feature sets, and service packages."
-      assignedMember="Member 1 — Admin & Backend"
-      branch="feature/admin-backend"
-      plannedFeatures={[
-        "Product catalog listing and status overview",
-        "Add, update, and archive product entities",
-        "Product feature tags and entitlement definitions",
-        "Multi-currency price association with Supabase backend",
-        "Integration with pricing plan tiers",
-      ]}
+    <ProductsListClient
+      initialProducts={products}
+      total={total}
+      currentPage={page}
+      pageSize={pageSize}
+      role={role}
+      initialSearch={search}
     />
   );
 }
