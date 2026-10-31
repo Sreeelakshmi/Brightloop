@@ -44,6 +44,9 @@ export function getMockStore(): MockStore {
       currency: "INR",
       description: "Dedicated account telemetry and SLA guarantees",
       active: true,
+      renewable: true,
+      pausable: false,
+      closable: true,
     },
     {
       id: "plan-pro-monthly",
@@ -54,6 +57,9 @@ export function getMockStore(): MockStore {
       currency: "INR",
       description: "Advanced analytics and automated recurring billing",
       active: true,
+      renewable: true,
+      pausable: true,
+      closable: true,
     },
     {
       id: "plan-std-monthly",
@@ -64,6 +70,9 @@ export function getMockStore(): MockStore {
       currency: "INR",
       description: "Core subscription management and invoicing",
       active: true,
+      renewable: true,
+      pausable: true,
+      closable: false,
     },
     {
       id: "plan-starter",
@@ -74,6 +83,9 @@ export function getMockStore(): MockStore {
       currency: "INR",
       description: "Foundational billing operations",
       active: true,
+      renewable: false,
+      pausable: false,
+      closable: true,
     },
     {
       id: "plan-scale-quarterly",
@@ -84,6 +96,9 @@ export function getMockStore(): MockStore {
       currency: "INR",
       description: "High-volume throughput with priority queue",
       active: true,
+      renewable: true,
+      pausable: false,
+      closable: false,
     },
   ];
 

@@ -14,12 +14,12 @@ import { supabase } from "@/lib/supabase";
  * ─────────────────────────────────────────────────────────────────────────────
  * SECURITY CONTRACT (Step 9 — Access Control Hardening):
  *   - Every exported function receives `customerId` from the SERVER SESSION
- *     (getCurrentUser().customerId).  The caller MUST NEVER pass a customerId
+ *     (getCurrentUser().customerId). The caller MUST NEVER pass a customerId
  *     taken from URL params or request bodies.
  *   - Single-entity getters (`getMySubscription`, `getMyInvoice`) do an
  *     explicit ownership check: if the found row's `customerId` does not match
  *     the session customer, they return `null` so the calling page can call
- *     `notFound()`.  This prevents IDOR (Insecure Direct Object Reference).
+ *     `notFound()`. This prevents IDOR (Insecure Direct Object Reference).
  *   - In production, Supabase Row Level Security (see docs/member4-rls-policies.sql)
  *     provides a second independent layer of enforcement.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ export async function getMySubscription(
 ): Promise<Subscription | null> {
   if (shouldUseMockData()) {
     const store = getMockStore();
-    const found = store.subscriptions.find((s) => s.id === id);
+    let found = store.subscriptions.find((s) => s.id === id);
     if (!found) return null;
 
     // ── OWNERSHIP CHECK ─────────────────────────────────────────────────────
@@ -74,6 +74,29 @@ export async function getMySubscription(
     if (found.customerId !== customerId) return null;
     // ────────────────────────────────────────────────────────────────────────
 
+    if (found && (!found.lines || found.lines.length === 0)) {
+      found = {
+        ...found,
+        lines: [
+          {
+            id: `line-${found.id}-1`,
+            subscriptionId: found.id,
+            description: `${found.plan?.name || "Service Plan"} - Core Instance`,
+            quantity: 1,
+            unitPrice: Math.round(found.totalAmount * 0.85),
+            amount: Math.round(found.totalAmount * 0.85),
+          },
+          {
+            id: `line-${found.id}-2`,
+            subscriptionId: found.id,
+            description: "Telemetry Addon & Dedicated SLA Guarantee",
+            quantity: 1,
+            unitPrice: Math.round(found.totalAmount * 0.15),
+            amount: Math.round(found.totalAmount * 0.15),
+          },
+        ],
+      };
+    }
     return found;
   }
 

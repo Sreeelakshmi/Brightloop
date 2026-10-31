@@ -61,6 +61,9 @@ export interface Plan {
   currency: string;
   description?: string;
   active: boolean;
+  renewable?: boolean;
+  pausable?: boolean;
+  closable?: boolean;
 }
 
 export interface SubscriptionLine {

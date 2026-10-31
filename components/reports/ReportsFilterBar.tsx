@@ -145,3 +145,4 @@ export function ReportsFilterBar({ tab }: ReportsFilterBarProps) {
     </div>
   );
 }
+

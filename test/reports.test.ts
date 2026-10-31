@@ -69,3 +69,4 @@ describe("Reports Engine & Summary Analytics", () => {
     expect(ascResult.data[0].metric1).toBeLessThanOrEqual(ascResult.data[ascResult.data.length - 1].metric1);
   });
 });
+
