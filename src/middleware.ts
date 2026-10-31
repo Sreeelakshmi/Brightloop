@@ -18,7 +18,8 @@ export function middleware(request: NextRequest) {
 
   const isStaffRoute = pathname.startsWith("/staff");
 
-  const isCustomerExclusiveRoute = pathname.startsWith("/customer");
+  const isCustomerExclusiveRoute =
+    pathname === "/customer" || pathname.startsWith("/customer/");
 
   const isAdminDashboardRoute =
     pathname.startsWith("/dashboard") ||
