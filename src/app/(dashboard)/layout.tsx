@@ -10,16 +10,16 @@ export default async function DashboardLayout({
 }) {
   // Server-side RBAC guard: Admin and Staff only
   // Unauthenticated users are redirected to /login; customers are redirected to /customer
-  await requireRole(["admin", "staff"]);
+  const { user, profile } = await requireRole(["admin", "staff"]);
 
   return (
     <div className="flex min-h-screen bg-brightloop-bg">
       {/* Reusable Sidebar Navigation */}
-      <Sidebar />
+      <Sidebar role={profile.role} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <Navbar />
+        <Navbar role={profile.role} userName={profile.fullName || profile.email} />
         <main className="flex-1 p-6 sm:p-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
