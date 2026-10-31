@@ -3,6 +3,8 @@ import { getPayments } from "@/services/payments";
 import { getInvoices } from "@/services/invoices";
 import { PaymentsClient } from "@/components/billing/payments-client";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Payments | Brightloop",
   description: "Payment transaction ledger and settlement tracking.",

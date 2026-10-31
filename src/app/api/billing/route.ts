@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runRecurringBilling, getActiveSubscriptions } from "@/services/recurring";
 import { triggerRecurringBillingSchema } from "@/lib/validations/billing";
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerClient, getAuthenticatedUser } from "@/lib/supabase/server";
 
 async function isBillingAuthorized(req: NextRequest): Promise<{ authorized: boolean; reason?: string }> {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
   const secretHeader = req.headers.get("x-cron-secret") || req.headers.get("x-billing-key");
 
-  // 1. Check Bearer token or custom header against CRON_SECRET
-  if (cronSecret) {
+  // 1. Verify Bearer token or custom header against CRON_SECRET if configured
+  if (cronSecret && cronSecret.trim().length > 0) {
     if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
       const token = authHeader.substring(7).trim();
       if (token === cronSecret) {
@@ -23,14 +23,10 @@ async function isBillingAuthorized(req: NextRequest): Promise<{ authorized: bool
 
   // 2. Check Supabase authenticated user session (staff / finance / admin / owner)
   try {
-    const client = await createServerClient();
-    if (client) {
-      const {
-        data: { user },
-        error: userErr,
-      } = await client.auth.getUser();
-
-      if (!userErr && user) {
+    const user = await getAuthenticatedUser();
+    if (user) {
+      const client = await createServerClient();
+      if (client) {
         const { data: profile } = await client
           .from("profiles")
           .select("role")
@@ -43,7 +39,7 @@ async function isBillingAuthorized(req: NextRequest): Promise<{ authorized: bool
         }
         return {
           authorized: false,
-          reason: `Forbidden: user role '${role}' is not authorized to trigger recurring billing.`,
+          reason: `Forbidden: user role '${role}' is not authorized to trigger recurring billing. Staff or admin role required.`,
         };
       }
     }
@@ -51,27 +47,50 @@ async function isBillingAuthorized(req: NextRequest): Promise<{ authorized: bool
     // Auth client unavailable
   }
 
-  // If CRON_SECRET is configured, strictly enforce credentials
-  if (cronSecret) {
-    return {
-      authorized: false,
-      reason: "Unauthorized: Valid Bearer CRON_SECRET or staff session required.",
-    };
-  }
-
-  // In local development / test environments when CRON_SECRET is not yet set
-  return { authorized: true };
+  // Fail-closed: Never permit unauthenticated or unauthorized recurring billing triggers
+  return {
+    authorized: false,
+    reason: "Unauthorized: Valid Bearer CRON_SECRET header or authenticated staff/admin session required.",
+  };
 }
 
 /**
  * GET /api/billing
  * Status and diagnostic overview of recurring billing engine
+ * Authenticated: Staff/admin see full system overview; customers see only their own subscriptions.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const subscriptions = await getActiveSubscriptions();
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized: Authentication required to inspect recurring billing engine." },
+        { status: 401 }
+      );
+    }
+
+    const client = await createServerClient();
+    let isStaff = false;
+
+    if (client) {
+      const { data: profile } = await client
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+      const role = profile?.role || "customer";
+      isStaff = ["owner", "admin", "finance", "staff"].includes(role);
+    }
+
+    const allSubscriptions = await getActiveSubscriptions();
     const now = new Date();
-    const dueSubscriptions = subscriptions.filter(
+
+    // If staff, return full diagnostics. If customer, filter to only their own subscriptions.
+    const accessibleSubscriptions = isStaff
+      ? allSubscriptions
+      : allSubscriptions.filter((s) => s.customerId === user.id);
+
+    const dueSubscriptions = accessibleSubscriptions.filter(
       (s) => s.status === "active" && new Date(s.nextBillingDate) <= now
     );
 
@@ -80,11 +99,12 @@ export async function GET() {
       module: "billing",
       branch: "feature/billing-payments",
       serverTime: now.toISOString(),
-      activeSubscriptionsCount: subscriptions.length,
+      role: isStaff ? "staff" : "customer",
+      activeSubscriptionsCount: accessibleSubscriptions.length,
       dueForBillingCount: dueSubscriptions.length,
       dueSubscriptions: dueSubscriptions.map((s) => ({
         subscriptionId: s.subscriptionId,
-        customerName: s.customerName,
+        customerName: isStaff ? s.customerName : "Self",
         planName: s.planName,
         nextBillingDate: s.nextBillingDate,
       })),
@@ -100,10 +120,11 @@ export async function GET() {
 /**
  * POST /api/billing
  * Trigger recurring billing run (Idempotent & Protected with Server-side Auth)
+ * Fail-closed: Requires valid Bearer CRON_SECRET or authenticated staff/admin session.
  */
 export async function POST(req: NextRequest) {
   try {
-    // Server-side authentication & authorization check
+    // Fail-closed server-side authentication & authorization check
     const authCheck = await isBillingAuthorized(req);
     if (!authCheck.authorized) {
       return NextResponse.json(

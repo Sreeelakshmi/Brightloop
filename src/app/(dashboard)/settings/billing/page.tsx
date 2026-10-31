@@ -3,6 +3,8 @@ import { getTaxRules } from "@/services/taxes";
 import { getDiscounts } from "@/services/discounts";
 import { BillingSettingsClient } from "@/components/billing/billing-settings-client";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Billing & Tax Settings | Brightloop",
   description: "Configure regional tax rules, discount coupons, and recurring billing parameters.",

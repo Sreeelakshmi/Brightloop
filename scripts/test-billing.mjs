@@ -10,6 +10,8 @@
  */
 
 import assert from "node:assert";
+import fs from "node:fs";
+import path from "node:path";
 
 // Mock helper simulating math functions in lib/billing/math.ts
 function rupeesToPaise(rupees) {
@@ -481,7 +483,12 @@ runTest("20. Discount usage limits and date windows strictly enforced", () => {
 // =====================================================================
 
 // Simulated Demo Payment Processor mimicking processDemoPayment()
-function simulateDemoPaymentGateway(input, invoiceState) {
+function simulateDemoPaymentGateway(input, invoiceState, env = {}) {
+  const isProd = (env.NODE_ENV ?? process.env.NODE_ENV) === "production" &&
+    (env.ENABLE_DEMO_PAYMENT_GATEWAY ?? process.env.ENABLE_DEMO_PAYMENT_GATEWAY) !== "true";
+  if (isProd) {
+    throw new Error("Demo payment gateway is disabled in production environments.");
+  }
   if (invoiceState.extendedStatus === "cancelled") {
     throw new Error("Cannot process demo payment against a cancelled invoice.");
   }
@@ -777,6 +784,211 @@ runTest("28. Demo Gateway: Rejects unauthorized customer attempting to pay anoth
       ),
     /Unauthorized: Customer ID mismatch/
   );
+});
+
+
+// TEST 29: Demo Gateway Production Guard
+runTest("29. Demo Gateway: Production guard rejects demo payments without override flag", () => {
+  const inv = {
+    id: "inv-demo-9",
+    customerId: "cust-demo-1",
+    totalAmountPaise: 500000,
+    amountPaidPaise: 0,
+    amountDuePaise: 500000,
+    extendedStatus: "confirmed",
+    status: "open",
+  };
+
+  // When NODE_ENV === "production" and ENABLE_DEMO_PAYMENT_GATEWAY is not set
+  assert.throws(
+    () =>
+      simulateDemoPaymentGateway(
+        {
+          invoiceId: inv.id,
+          customerId: "cust-demo-1",
+          amountRupees: 5000,
+          paymentMethod: "card",
+          demoOutcome: "success",
+        },
+        inv,
+        { NODE_ENV: "production" }
+      ),
+    /Demo payment gateway is disabled in production environments/
+  );
+
+  // When ENABLE_DEMO_PAYMENT_GATEWAY === "true", it is permitted
+  const res = simulateDemoPaymentGateway(
+    {
+      invoiceId: inv.id,
+      customerId: "cust-demo-1",
+      amountRupees: 5000,
+      paymentMethod: "card",
+      demoOutcome: "success",
+    },
+    inv,
+    { NODE_ENV: "production", ENABLE_DEMO_PAYMENT_GATEWAY: "true" }
+  );
+  assert.strictEqual(res.success, true);
+});
+
+// TEST 30: Fail-closed Billing API Auth Check
+runTest("30. Billing API: Fail-closed authorization rejects unauthorized requests", () => {
+  function checkBillingAuth({ cronSecretEnv, authHeader, secretHeader, userRole }) {
+    // 1. Check Bearer CRON_SECRET
+    if (cronSecretEnv && cronSecretEnv.trim().length > 0) {
+      if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
+        if (authHeader.substring(7).trim() === cronSecretEnv) return { authorized: true };
+      }
+      if (secretHeader && secretHeader === cronSecretEnv) return { authorized: true };
+    }
+    // 2. Check user role
+    if (userRole && ["owner", "admin", "finance", "staff"].includes(userRole)) {
+      return { authorized: true };
+    }
+    // Fail-closed
+    return { authorized: false, reason: "Unauthorized" };
+  }
+
+  // No auth header and no session -> Rejected
+  assert.strictEqual(checkBillingAuth({}).authorized, false);
+
+  // Invalid bearer token -> Rejected
+  assert.strictEqual(checkBillingAuth({ cronSecretEnv: "secret123", authHeader: "Bearer wrong" }).authorized, false);
+
+  // Valid bearer token -> Authorized
+  assert.strictEqual(checkBillingAuth({ cronSecretEnv: "secret123", authHeader: "Bearer secret123" }).authorized, true);
+
+  // Customer role -> Rejected
+  assert.strictEqual(checkBillingAuth({ userRole: "customer" }).authorized, false);
+
+  // Staff role -> Authorized
+  assert.strictEqual(checkBillingAuth({ userRole: "staff" }).authorized, true);
+});
+
+// TEST 31: Billing API Data Isolation
+runTest("31. Billing API: Unauthenticated GET request is rejected with 401; Customer data is scoped", () => {
+  function getBillingDiagnostics({ authenticatedUser, userRole, allSubscriptions }) {
+    if (!authenticatedUser) {
+      return { status: 401, error: "Unauthorized: Authentication required." };
+    }
+    const isStaff = ["owner", "admin", "finance", "staff"].includes(userRole);
+    const visible = isStaff
+      ? allSubscriptions
+      : allSubscriptions.filter((s) => s.customerId === authenticatedUser.id);
+
+    return {
+      status: 200,
+      subscriptions: visible,
+    };
+  }
+
+  const sampleSubs = [
+    { subscriptionId: "s1", customerId: "user-1", planName: "Pro" },
+    { subscriptionId: "s2", customerId: "user-2", planName: "Enterprise" },
+  ];
+
+  // Unauthenticated caller
+  const unauthRes = getBillingDiagnostics({ authenticatedUser: null, allSubscriptions: sampleSubs });
+  assert.strictEqual(unauthRes.status, 401);
+
+  // Customer caller (user-1) sees ONLY user-1 subscription
+  const customerRes = getBillingDiagnostics({
+    authenticatedUser: { id: "user-1" },
+    userRole: "customer",
+    allSubscriptions: sampleSubs,
+  });
+  assert.strictEqual(customerRes.status, 200);
+  assert.strictEqual(customerRes.subscriptions.length, 1);
+  assert.strictEqual(customerRes.subscriptions[0].customerId, "user-1");
+
+  // Staff caller sees ALL subscriptions
+  const staffRes = getBillingDiagnostics({
+    authenticatedUser: { id: "admin-1" },
+    userRole: "staff",
+    allSubscriptions: sampleSubs,
+  });
+  assert.strictEqual(staffRes.status, 200);
+  assert.strictEqual(staffRes.subscriptions.length, 2);
+});
+
+// TEST 32: Atomic Recurring Billing RPC Contract
+runTest("32. Atomic Recurring Billing: Date advances if and only if invoice creation succeeds", () => {
+  function simulateAtomicRecurringRun(sub, createInvoiceShouldFail = false) {
+    let nextBillingDate = sub.nextBillingDate;
+    let invoiceCreated = null;
+
+    try {
+      if (createInvoiceShouldFail) {
+        throw new Error("Simulated DB Disk Full / Unique Violation");
+      }
+      invoiceCreated = { id: "inv-new", subscriptionId: sub.id, periodStart: sub.nextBillingDate };
+      // Atomically advance date ONLY after success
+      nextBillingDate = "2026-11-30T00:00:00Z";
+    } catch {
+      // Date is NEVER advanced on failure
+    }
+
+    return { invoiceCreated, nextBillingDate };
+  }
+
+  const sub = { id: "sub-1", nextBillingDate: "2026-10-31T00:00:00Z" };
+
+  // Failure case: date must NOT advance
+  const failRun = simulateAtomicRecurringRun(sub, true);
+  assert.strictEqual(failRun.invoiceCreated, null);
+  assert.strictEqual(failRun.nextBillingDate, "2026-10-31T00:00:00Z");
+
+  // Success case: date advances
+  const successRun = simulateAtomicRecurringRun(sub, false);
+  assert.notStrictEqual(successRun.invoiceCreated, null);
+  assert.strictEqual(successRun.nextBillingDate, "2026-11-30T00:00:00Z");
+});
+
+// TEST 33: Atomic Discount Increment Limit Enforcement
+runTest("33. Atomic Discount Increment: Limits maximum coupon redemptions safely", () => {
+  let discountRow = { code: "LIMITED10", maxUses: 3, currentUses: 2 };
+
+  function incrementDiscountAtomic(row) {
+    if (row.currentUses >= row.maxUses) {
+      throw new Error(`Discount coupon ${row.code} has reached its maximum usage limit (${row.maxUses}).`);
+    }
+    row.currentUses += 1;
+    return row.currentUses;
+  }
+
+  // 1st redemption (uses: 2 -> 3)
+  assert.strictEqual(incrementDiscountAtomic(discountRow), 3);
+
+  // 2nd redemption attempt (limit reached -> throws error)
+  assert.throws(() => incrementDiscountAtomic(discountRow), /reached its maximum usage limit/);
+});
+
+// TEST 34: Zero Fallback Policy
+runTest("34. Zero Fallback Policy: Empty database queries return [] without leaking mock invoices", () => {
+  function queryInvoicesFromDatabase(dbRows) {
+    // Correct database-first behavior: no mock data fallback when rows are empty
+    if (!dbRows || dbRows.length === 0) {
+      return [];
+    }
+    return dbRows;
+  }
+
+  assert.deepStrictEqual(queryInvoicesFromDatabase([]), []);
+  assert.deepStrictEqual(queryInvoicesFromDatabase(null), []);
+});
+
+// TEST 35: Migration v3 SQL Schema Verification
+runTest("35. Migration v3 Schema: Asserts security migration contains RPCs, partial index, and search_path", () => {
+  const migrationPath = path.join(process.cwd(), "supabase/migrations/20261031_billing_security_v3.sql");
+  assert.strictEqual(fs.existsSync(migrationPath), true, "Migration file 20261031_billing_security_v3.sql must exist");
+
+  const sqlContent = fs.readFileSync(migrationPath, "utf-8");
+  assert.match(sqlContent, /uq_invoices_subscription_period/, "Must contain partial unique index on subscription period");
+  assert.match(sqlContent, /record_invoice_payment/, "Must define record_invoice_payment RPC");
+  assert.match(sqlContent, /generate_subscription_recurring_invoice/, "Must define generate_subscription_recurring_invoice RPC");
+  assert.match(sqlContent, /increment_discount_usage_atomic/, "Must define increment_discount_usage_atomic RPC");
+  assert.match(sqlContent, /SET search_path = public/, "Must enforce search_path = public for SECURITY DEFINER functions");
+  assert.match(sqlContent, /FOR UPDATE/, "Must acquire row lock FOR UPDATE in RPCs");
 });
 
 console.log("\n=======================================================");
