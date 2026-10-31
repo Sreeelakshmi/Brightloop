@@ -5,6 +5,8 @@ import { listPlans } from "@/services/plans.service";
 import { listProducts } from "@/services/products.service";
 import { SubscriptionForm } from "@/components/subscriptions/SubscriptionForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewSubscriptionPage() {
   let isPermitted = false;
   try {
@@ -24,11 +26,23 @@ export default async function NewSubscriptionPage() {
     );
   }
 
-  const [tplsRes, plansRes, prodsRes] = await Promise.all([
-    listTemplates({ pageSize: 100 }),
-    listPlans({ pageSize: 100 }),
-    listProducts({ pageSize: 100 }),
-  ]);
+  let templates: any[] = [];
+  let plans: any[] = [];
+  let products: any[] = [];
+  try {
+    const [tplsRes, plansRes, prodsRes] = await Promise.all([
+      listTemplates({ pageSize: 100 }),
+      listPlans({ pageSize: 100 }),
+      listProducts({ pageSize: 100 }),
+    ]);
+    templates = tplsRes.data;
+    plans = plansRes.data;
+    products = prodsRes.data;
+  } catch {
+    templates = [];
+    plans = [];
+    products = [];
+  }
 
   return (
     <div className="space-y-6">
@@ -36,9 +50,9 @@ export default async function NewSubscriptionPage() {
         <Link href="/subscriptions" className="text-xs text-[#657367] hover:underline">&larr; Back to Subscriptions</Link>
       </div>
       <SubscriptionForm
-        templates={tplsRes.data}
-        plans={plansRes.data}
-        products={prodsRes.data}
+        templates={templates}
+        plans={plans}
+        products={products}
       />
     </div>
   );

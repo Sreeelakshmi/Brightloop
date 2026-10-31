@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth/require-user";
 import { PlanForm } from "@/components/subscriptions/PlanForm";
-import { Button } from "@/components/ui/button";
+import { THEME } from "@/components/subscriptions/theme";
 
 export default async function NewPlanPage() {
   let isAdmin = false;
@@ -14,13 +14,13 @@ export default async function NewPlanPage() {
 
   if (!isAdmin) {
     return (
-      <div className="p-8 max-w-md mx-auto text-center space-y-4">
-        <h2 className="text-xl font-semibold text-destructive">Access Restricted</h2>
-        <p className="text-sm text-muted-foreground">
+      <div className={`p-8 max-w-md mx-auto text-center space-y-4 ${THEME.card}`}>
+        <h2 className="text-xl font-bold uppercase tracking-tight text-[#D95522]">Access Restricted</h2>
+        <p className="text-xs uppercase tracking-wider text-[#657367]">
           Only administrators can create pricing plans.
         </p>
-        <Link href="/plans">
-          <Button variant="outline">Back to Plans</Button>
+        <Link href="/plans" className={`inline-block px-4 py-2 ${THEME.secondaryButton} text-xs uppercase tracking-wider`}>
+          Back to Plans
         </Link>
       </div>
     );
@@ -29,7 +29,7 @@ export default async function NewPlanPage() {
   return (
     <div className="space-y-6">
       <div className="max-w-2xl mx-auto">
-        <Link href="/plans" className="text-xs text-muted-foreground hover:underline">
+        <Link href="/plans" className="text-xs uppercase tracking-wider text-[#657367] hover:underline">
           &larr; Back to Plans
         </Link>
       </div>

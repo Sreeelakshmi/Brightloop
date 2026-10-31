@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { THEME } from "./theme";
 
 export interface VariantItem {
   id?: string;
@@ -41,64 +41,64 @@ export function VariantsEditor({ variants, onChange, error }: VariantsEditorProp
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <label className="text-sm font-medium text-foreground">Product Variants</label>
-          <p className="text-xs text-muted-foreground">
+          <label className="text-xs font-bold uppercase tracking-wider text-[#1F2622]">Product Variants</label>
+          <p className="text-xs text-[#657367]">
             Configure options such as size, color, or capacity with extra surcharges.
           </p>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={addRow} className="h-8 text-xs gap-1">
+        <button
+          type="button"
+          onClick={addRow}
+          className={`h-8 px-3 ${THEME.secondaryButton} text-xs flex items-center gap-1 uppercase tracking-wider`}
+        >
           <Plus className="w-3.5 h-3.5" />
           Add Variant
-        </Button>
+        </button>
       </div>
 
-      {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
+      {error && <p className="text-xs text-[#D95522] font-medium">{error}</p>}
 
       {variants.length === 0 ? (
-        <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
-          No variants defined yet. Click &quot;Add Variant&quot; to add options.
+        <div className="rounded-xl border border-dashed border-[#D5DDD2] p-4 text-center text-xs text-[#657367] bg-[#F3F7F2]">
+          No variants defined yet. Click &quot;Add Variant&quot; to configure options.
         </div>
       ) : (
         <div className="space-y-2">
           {variants.map((v, idx) => (
-            <div key={v.id ?? idx} className="flex items-center gap-2">
+            <div key={idx} className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="Attribute (e.g. Color)"
+                placeholder="Attribute (e.g. Storage)"
                 value={v.attribute}
                 onChange={(e) => updateRow(idx, "attribute", e.target.value)}
-                className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                required
+                className={`flex-1 ${THEME.input}`}
               />
               <input
                 type="text"
-                placeholder="Value (e.g. Space Gray)"
+                placeholder="Value (e.g. 512GB)"
                 value={v.value}
                 onChange={(e) => updateRow(idx, "value", e.target.value)}
-                className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                required
+                className={`flex-1 ${THEME.input}`}
               />
-              <div className="w-32 relative">
-                <span className="absolute left-2.5 top-2 text-xs text-muted-foreground">$</span>
+              <div className="relative w-28">
+                <span className="absolute left-2.5 top-2 text-xs text-[#657367] font-mono">+$</span>
                 <input
                   type="number"
-                  min="0"
                   step="0.01"
                   placeholder="0.00"
                   value={v.extraPrice}
                   onChange={(e) => updateRow(idx, "extraPrice", e.target.value)}
-                  className="w-full h-9 rounded-md border border-input bg-background pl-6 pr-2 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  className={`w-full pl-7 ${THEME.input}`}
                 />
               </div>
-              <Button
+              <button
                 type="button"
-                variant="ghost"
-                size="icon"
                 onClick={() => removeRow(idx)}
-                className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                className="p-2 text-[#8C9B8E] hover:text-[#F27B4B] transition-colors"
+                title="Remove variant"
               >
                 <Trash2 className="w-4 h-4" />
-              </Button>
+              </button>
             </div>
           ))}
         </div>

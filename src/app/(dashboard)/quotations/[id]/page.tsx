@@ -6,6 +6,8 @@ import { listPlans } from "@/services/plans.service";
 import { listProducts } from "@/services/products.service";
 import { TemplateForm } from "@/components/subscriptions/TemplateForm";
 
+export const dynamic = "force-dynamic";
+
 interface EditTemplatePageProps {
   params: { id: string };
 }
@@ -29,11 +31,21 @@ export default async function EditQuotationTemplatePage({ params }: EditTemplate
     );
   }
 
-  const [template, plansRes, prodsRes] = await Promise.all([
-    getTemplate(params.id),
-    listPlans({ pageSize: 100 }),
-    listProducts({ pageSize: 100 }),
-  ]);
+  let template = null;
+  let plans: any[] = [];
+  let products: any[] = [];
+  try {
+    const [tpl, plansRes, prodsRes] = await Promise.all([
+      getTemplate(params.id),
+      listPlans({ pageSize: 100 }),
+      listProducts({ pageSize: 100 }),
+    ]);
+    template = tpl;
+    plans = plansRes.data;
+    products = prodsRes.data;
+  } catch {
+    // Handled below
+  }
 
   if (!template) {
     notFound();
@@ -44,7 +56,7 @@ export default async function EditQuotationTemplatePage({ params }: EditTemplate
       <div className="max-w-3xl mx-auto">
         <Link href="/quotations" className="text-xs text-[#657367] hover:underline">&larr; Back to Templates</Link>
       </div>
-      <TemplateForm initialTemplate={template} plans={plansRes.data} products={prodsRes.data} />
+      <TemplateForm initialTemplate={template} plans={plans} products={products} />
     </div>
   );
 }

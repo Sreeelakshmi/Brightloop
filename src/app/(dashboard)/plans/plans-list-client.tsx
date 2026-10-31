@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PlanTable } from "@/components/subscriptions/PlanTable";
+import { THEME } from "@/components/subscriptions/theme";
 import type { PlanWithId } from "@/types/catalog";
 import type { UserRole } from "@/types";
 
@@ -53,9 +54,9 @@ export function PlansListClient({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Pricing Plans</h1>
-        <p className="text-sm text-muted-foreground">
-          Configure subscription plans, billing cycles, minimum quantities, and lifecycle policies.
+        <h1 className={`text-2xl ${THEME.primaryDark.heading}`}>Pricing Plans</h1>
+        <p className="text-xs uppercase tracking-wider text-[#657367]">
+          Configure recurring billing intervals and lifecycle policy rules.
         </p>
       </div>
 

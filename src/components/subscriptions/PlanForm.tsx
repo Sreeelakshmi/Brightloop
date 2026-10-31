@@ -6,8 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { planSchema } from "@/lib/validations/subscription";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { THEME } from "./theme";
 import { createPlanAction, updatePlanAction } from "@/app/(dashboard)/plans/actions";
 import type { PlanWithId } from "@/types/catalog";
 
@@ -81,73 +80,115 @@ export function PlanForm({ initialPlan, onSuccess }: PlanFormProps) {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-lg">{initialPlan ? "Edit Plan" : "New Pricing Plan"}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {serverError && <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">{serverError}</div>}
+    <div className={`w-full max-w-2xl mx-auto ${THEME.card} p-6`}>
+      <div className="pb-4 border-b border-[#D5DDD2] mb-6">
+        <h2 className="text-xl font-bold uppercase tracking-tight text-[#1F2622]">
+          {initialPlan ? "Edit Plan" : "New Pricing Plan"}
+        </h2>
+        <p className="text-xs text-[#657367] uppercase tracking-wider mt-1">
+          Recurring billing intervals and lifecycle rules
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {serverError && (
+          <div className="p-3 bg-[#FDEEE7] text-[#D95522] border border-[#F27B4B] text-sm rounded-xl">
+            {serverError}
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <label className="text-xs font-bold uppercase tracking-wider text-[#1F2622]">Plan Name *</label>
+          <input
+            {...register("name")}
+            className={`w-full ${THEME.input}`}
+            placeholder="e.g. Pro Monthly"
+          />
+          {errors.name && <p className="text-xs text-[#D95522] font-medium">{errors.name.message}</p>}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="space-y-1">
-            <label className="text-sm font-medium">Plan Name *</label>
-            <input {...register("name")} className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm" placeholder="e.g. Pro Monthly" />
-            {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+            <label className="text-xs font-bold uppercase tracking-wider text-[#1F2622]">Price ($) *</label>
+            <input
+              type="number"
+              step="0.01"
+              {...register("price", { valueAsNumber: true })}
+              className={`w-full ${THEME.input}`}
+            />
+            {errors.price && <p className="text-xs text-[#D95522] font-medium">{errors.price.message}</p>}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Price ($) *</label>
-              <input type="number" step="0.01" {...register("price", { valueAsNumber: true })} className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm" />
-              {errors.price && <p className="text-xs text-red-500">{errors.price.message}</p>}
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Billing Period *</label>
-              <select {...register("billingPeriod")} className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm">
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Min Quantity *</label>
-              <input type="number" min="1" {...register("minQuantity", { valueAsNumber: true })} className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm" />
-              {errors.minQuantity && <p className="text-xs text-red-500">{errors.minQuantity.message}</p>}
-            </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#1F2622]">Billing Period *</label>
+            <select {...register("billingPeriod")} className={`w-full ${THEME.input}`}>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Available From</label>
-              <input type="date" {...register("availableFrom")} className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Available To</label>
-              <input type="date" {...register("availableTo")} className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm" />
-              {errors.availableTo && <p className="text-xs text-red-500">{errors.availableTo.message}</p>}
-            </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#1F2622]">Min Quantity *</label>
+            <input
+              type="number"
+              min="1"
+              {...register("minQuantity", { valueAsNumber: true })}
+              className={`w-full ${THEME.input}`}
+            />
+            {errors.minQuantity && <p className="text-xs text-[#D95522] font-medium">{errors.minQuantity.message}</p>}
           </div>
-          <div className="pt-2 border-t space-y-2">
-            <label className="text-sm font-medium">Plan Lifecycle Toggles</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" {...register("autoClose")} className="rounded border-input text-primary" /> Auto Close
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" {...register("closable")} className="rounded border-input text-primary" /> Closable
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" {...register("pausable")} className="rounded border-input text-primary" /> Pausable
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" {...register("renewable")} className="rounded border-input text-primary" /> Renewable
-              </label>
-            </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#1F2622]">Available From</label>
+            <input type="date" {...register("availableFrom")} className={`w-full ${THEME.input}`} />
           </div>
-          <div className="flex items-center justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? "Saving..." : initialPlan ? "Update Plan" : "Create Plan"}</Button>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#1F2622]">Available To</label>
+            <input type="date" {...register("availableTo")} className={`w-full ${THEME.input}`} />
+            {errors.availableTo && <p className="text-xs text-[#D95522] font-medium">{errors.availableTo.message}</p>}
           </div>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+
+        <div className="pt-3 border-t border-[#D5DDD2] space-y-2">
+          <label className="text-xs font-bold uppercase tracking-wider text-[#1F2622]">Plan Lifecycle Rules</label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <label className="flex items-center gap-2 cursor-pointer font-medium text-[#1F2622]">
+              <input type="checkbox" {...register("autoClose")} className="rounded border-[#D5DDD2] text-[#1F2622] focus:ring-[#1F2622]" /> Auto Close
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer font-medium text-[#1F2622]">
+              <input type="checkbox" {...register("closable")} className="rounded border-[#D5DDD2] text-[#1F2622] focus:ring-[#1F2622]" /> Closable
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer font-medium text-[#1F2622]">
+              <input type="checkbox" {...register("pausable")} className="rounded border-[#D5DDD2] text-[#1F2622] focus:ring-[#1F2622]" /> Pausable
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer font-medium text-[#1F2622]">
+              <input type="checkbox" {...register("renewable")} className="rounded border-[#D5DDD2] text-[#1F2622] focus:ring-[#1F2622]" /> Renewable
+            </label>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#D5DDD2]">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            disabled={loading}
+            className={`px-4 py-2 ${THEME.secondaryButton} text-xs uppercase tracking-wider`}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className={`px-5 py-2 ${THEME.primaryDark.button} text-xs uppercase tracking-wider`}
+          >
+            {loading ? "Saving..." : initialPlan ? "Update Plan" : "Create Plan"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

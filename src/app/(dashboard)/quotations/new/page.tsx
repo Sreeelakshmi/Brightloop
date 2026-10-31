@@ -4,6 +4,8 @@ import { listPlans } from "@/services/plans.service";
 import { listProducts } from "@/services/products.service";
 import { TemplateForm } from "@/components/subscriptions/TemplateForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewQuotationTemplatePage() {
   let isPermitted = false;
   try {
@@ -23,17 +25,26 @@ export default async function NewQuotationTemplatePage() {
     );
   }
 
-  const [plansRes, prodsRes] = await Promise.all([
-    listPlans({ pageSize: 100 }),
-    listProducts({ pageSize: 100 }),
-  ]);
+  let plans: any[] = [];
+  let products: any[] = [];
+  try {
+    const [plansRes, prodsRes] = await Promise.all([
+      listPlans({ pageSize: 100 }),
+      listProducts({ pageSize: 100 }),
+    ]);
+    plans = plansRes.data;
+    products = prodsRes.data;
+  } catch {
+    plans = [];
+    products = [];
+  }
 
   return (
     <div className="space-y-6">
       <div className="max-w-3xl mx-auto">
         <Link href="/quotations" className="text-xs text-[#657367] hover:underline">&larr; Back to Templates</Link>
       </div>
-      <TemplateForm plans={plansRes.data} products={prodsRes.data} />
+      <TemplateForm plans={plans} products={products} />
     </div>
   );
 }

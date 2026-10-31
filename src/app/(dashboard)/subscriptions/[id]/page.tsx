@@ -5,6 +5,8 @@ import { getSubscription } from "@/services/subscriptions.service";
 import { SubscriptionDetail } from "@/components/subscriptions/SubscriptionDetail";
 import type { UserRole } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 interface SubscriptionDetailPageProps {
   params: { id: string };
 }
