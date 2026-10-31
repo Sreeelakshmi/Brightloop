@@ -8,3 +8,4 @@ export async function GET() {
     message: "Brightloop Gemini AI API placeholder route. Ready for Member 4 integration.",
   });
 }
+
