@@ -13,6 +13,7 @@ import type {
 import type {
   PaymentTerms,
   SubscriptionCreate,
+  SubscriptionLine,
   SubscriptionStatus,
 } from "@/types/subscription";
 
@@ -248,7 +249,7 @@ export async function createSubscriptionDraft(
   const subId = subData.id;
 
   if (input.lines && input.lines.length > 0) {
-    const lineInserts = input.lines.map((l) => ({
+    const lineInserts = input.lines.map((l: SubscriptionLine) => ({
       subscription_id: subId,
       product_id: l.productId,
       variant_id: l.variantId ?? null,
