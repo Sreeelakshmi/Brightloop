@@ -1,0 +1,193 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { Logo } from "@/components/ui-shared/Logo";
+import { AuthUser } from "@/lib/auth";
+import {
+  Menu,
+  X,
+  LogOut,
+  User,
+  CreditCard,
+  FileText,
+  Layers,
+  LayoutDashboard,
+} from "lucide-react";
+
+export interface PortalHeaderProps {
+  user: AuthUser;
+}
+
+const portalTabs = [
+  { label: "Overview", href: "/portal", icon: LayoutDashboard },
+  { label: "My Subscriptions", href: "/portal/subscriptions", icon: Layers },
+  { label: "Invoices", href: "/portal/invoices", icon: FileText },
+  { label: "Payments", href: "/portal/payments", icon: CreditCard },
+  { label: "Account", href: "/portal/account", icon: User },
+];
+
+export function PortalHeader({ user }: PortalHeaderProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [profileOpen, setProfileOpen] = React.useState(false);
+  const [loggingOut, setLoggingOut] = React.useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+      router.refresh();
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
+  return (
+    <header className="bg-white border-b border-[#D5DDD2] sticky top-0 z-30 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="h-16 flex items-center justify-between gap-4">
+          {/* Logo & Brand */}
+          <div className="flex items-center gap-6">
+            <Logo size="default" href="/portal" />
+            <span className="hidden lg:inline-block h-5 w-[1px] bg-[#D5DDD2]" />
+            <span className="hidden lg:inline-block text-[10px] font-bold uppercase tracking-wider text-[#8C9B8E]">
+              CUSTOMER PORTAL
+            </span>
+          </div>
+
+          {/* Desktop Navigation Tabs */}
+          <nav className="hidden md:flex items-center gap-1.5">
+            {portalTabs.map((tab) => {
+              const isActive =
+                tab.href === "/portal"
+                  ? pathname === "/portal"
+                  : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all relative select-none",
+                    isActive
+                      ? "bg-[#EBF1EA] text-[#1F2622] font-bold shadow-sm"
+                      : "text-[#8C9B8E] hover:text-[#1F2622] hover:bg-[#EBF1EA]/60"
+                  )}
+                >
+                  {tab.label}
+                  {isActive && (
+                    <span
+                      className="absolute -bottom-2.5 left-3 right-3 h-[2px] bg-[#F27B4B] rounded-full"
+                      aria-hidden="true"
+                    />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Right Controls: User Profile & Mobile Toggle */}
+          <div className="flex items-center gap-3">
+            {/* Customer Tag */}
+            <span className="hidden sm:inline-flex px-2.5 py-1 bg-[#DDE5DB] text-[#1F2622] border border-[#D5DDD2] rounded-full text-[10px] font-bold uppercase">
+              PORTAL ACCESS
+            </span>
+
+            {/* Profile Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-2 p-1.5 pl-2 bg-[#EBF1EA] border border-[#D5DDD2] rounded-full hover:bg-[#DDE5DB] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F27B4B]"
+              >
+                <div className="w-6 h-6 rounded-full bg-[#1F2622] text-white flex items-center justify-center text-[11px] font-bold">
+                  {user.name.charAt(0)}
+                </div>
+                <span className="text-xs font-semibold text-[#1F2622] max-w-[120px] truncate pr-1">
+                  {user.name}
+                </span>
+              </button>
+
+              {profileOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-56 bg-white border border-[#D5DDD2] rounded-xl p-2 shadow-xl z-50 animate-in fade-in-0 zoom-in-95"
+                  onMouseLeave={() => setProfileOpen(false)}
+                >
+                  <div className="px-3 py-2 border-b border-[#D5DDD2] mb-1">
+                    <div className="text-xs font-bold text-[#1F2622] uppercase">
+                      {user.name}
+                    </div>
+                    <div className="text-[11px] text-[#8C9B8E] truncate">
+                      {user.email}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    disabled={loggingOut}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#1F2622] hover:bg-[#EBF1EA] rounded-lg font-semibold text-left transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-[#F27B4B]" />
+                    <span>{loggingOut ? "Signing out..." : "Log out"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Hamburger Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-[#1F2622] hover:bg-[#EBF1EA] rounded-lg border border-[#D5DDD2]"
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-[#D5DDD2] py-3 space-y-1">
+            {portalTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive =
+                tab.href === "/portal"
+                  ? pathname === "/portal"
+                  : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors",
+                    isActive
+                      ? "bg-[#EBF1EA] text-[#1F2622] font-bold"
+                      : "text-[#8C9B8E] hover:bg-[#EBF1EA]"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{tab.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}

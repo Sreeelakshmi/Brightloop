@@ -4,65 +4,76 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    /* Primary Background: #E4ECE1 (pale sage green) */
+    --background: 103 19% 90%;
+    /* Primary Text: #1F2622 (dark green-black charcoal) */
+    --foreground: 143 10% 13%;
 
+    /* Surface / Cards: #FFFFFF */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 143 10% 13%;
 
+    /* Popover Surfaces: #FFFFFF */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 143 10% 13%;
 
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary: Charcoal #1F2622 for headings, primary buttons, dark card */
+    --primary: 143 10% 13%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary: Muted Sage #8C9B8E */
+    --secondary: 128 7% 58%;
+    --secondary-foreground: 143 10% 13%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted Panel / Table Header: #DDE5DB */
+    --muted: 107 11% 87%;
+    --muted-foreground: 127 6% 43%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent Orange: #F27B4B for attention only (overdue, alerts, marker) */
+    --accent: 17 87% 62%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive alert uses Orange accent */
+    --destructive: 17 87% 62%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    /* Borders: #D5DDD2 */
+    --border: 105 13% 85%;
+    --input: 105 13% 85%;
+    --ring: 128 7% 58%;
 
-    --radius: 0.5rem;
+    /* Rounded corners: 12px (rounded-xl) */
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 143 10% 10%;
+    --foreground: 103 19% 90%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 143 10% 13%;
+    --card-foreground: 103 19% 90%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 143 10% 13%;
+    --popover-foreground: 103 19% 90%;
 
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 103 19% 90%;
+    --primary-foreground: 143 10% 13%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 128 7% 40%;
+    --secondary-foreground: 103 19% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 143 10% 18%;
+    --muted-foreground: 128 7% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 17 87% 62%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 17 87% 62%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 143 10% 20%;
+    --input: 143 10% 20%;
+    --ring: 128 7% 58%;
   }
 }
 
@@ -71,6 +82,6 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#E4ECE1] text-[#1F2622] antialiased font-sans;
   }
 }

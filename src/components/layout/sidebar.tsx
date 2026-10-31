@@ -4,139 +4,135 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/ui-shared/Logo";
 import {
-  LayoutDashboard,
+  Home,
+  BarChart2,
+  Users,
+  Inbox,
+  FileText,
+  CreditCard,
+  Menu,
   Package,
   Layers,
-  Users,
-  UserCheck,
   FileSpreadsheet,
-  Repeat,
-  Receipt,
-  CreditCard,
+  UserCheck,
   Settings,
-  ShieldCheck,
   ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 
-interface NavLinkItem {
+interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
-  member: string;
 }
 
-const mainNavItems: NavLinkItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, member: "M4" },
-  { name: "Products", href: "/products", icon: Package, member: "M1" },
-  { name: "Plans", href: "/plans", icon: Layers, member: "M1" },
-  { name: "Customers", href: "/customers", icon: Users, member: "M1" },
-  { name: "Staff", href: "/staff", icon: UserCheck, member: "M1" },
+const primaryNav: NavItem[] = [
+  { name: "Dashboard", href: "/dashboard", icon: Home },
+  { name: "Reports", href: "/reports", icon: BarChart2 },
+  { name: "Customers", href: "/customers", icon: Users },
+  { name: "Subscriptions", href: "/subscriptions", icon: Inbox },
+  { name: "Invoices", href: "/invoices", icon: FileText },
+  { name: "Payments", href: "/payments", icon: CreditCard },
 ];
 
-const subscriptionNavItems: NavLinkItem[] = [
-  { name: "Quotations", href: "/quotations", icon: FileSpreadsheet, member: "M2" },
-  { name: "Subscriptions", href: "/subscriptions", icon: Repeat, member: "M2" },
-];
-
-const billingNavItems: NavLinkItem[] = [
-  { name: "Invoices", href: "/invoices", icon: Receipt, member: "M3" },
-  { name: "Payments", href: "/payments", icon: CreditCard, member: "M3" },
-];
-
-const systemNavItems: NavLinkItem[] = [
-  { name: "Settings", href: "/settings", icon: Settings, member: "M1" },
+const secondaryNav: NavItem[] = [
+  { name: "Products", href: "/products", icon: Package },
+  { name: "Plans", href: "/plans", icon: Layers },
+  { name: "Quotations", href: "/quotations", icon: FileSpreadsheet },
+  { name: "Staff", href: "/staff", icon: UserCheck },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
 
-  const renderNavGroup = (title: string, items: NavLinkItem[]) => (
-    <div className="py-2">
-      <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-        {title}
-      </h3>
-      <div className="space-y-1">
-        {items.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
+  const isItemActive = (href: string) => {
+    if (href === "/dashboard") {
+      return pathname === "/dashboard" || pathname === "/";
+    }
+    return pathname.startsWith(href);
+  };
+
+  const renderNavLinks = (items: NavItem[]) => (
+    <div className="space-y-1">
+      {items.map((item) => {
+        const active = isItemActive(item.href);
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex items-center gap-3 px-3.5 py-2 text-sm font-semibold rounded-lg transition-all group relative",
+              active
+                ? "bg-[#EBF1EA] text-[#F27B4B] border-l-[3px] border-[#F27B4B] rounded-l-none pl-3 font-bold"
+                : "text-[#1F2622]/85 hover:bg-[#EBF1EA]/60 hover:text-[#1F2622]"
+            )}
+          >
+            <Icon
               className={cn(
-                "flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors group",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                "w-4 h-4 shrink-0 transition-colors",
+                active
+                  ? "text-[#F27B4B]"
+                  : "text-[#8C9B8E] group-hover:text-[#1F2622]"
               )}
-            >
-              <div className="flex items-center gap-3">
-                <Icon
-                  className={cn(
-                    "w-4 h-4 shrink-0 transition-colors",
-                    isActive
-                      ? "text-primary-foreground"
-                      : "text-muted-foreground group-hover:text-foreground"
-                  )}
-                />
-                <span>{item.name}</span>
-              </div>
-              <span
-                className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded font-mono font-medium",
-                  isActive
-                    ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "bg-muted text-muted-foreground group-hover:bg-accent"
-                )}
-              >
-                {item.member}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+            />
+            <span className="truncate">{item.name}</span>
+          </Link>
+        );
+      })}
     </div>
   );
 
   return (
-    <aside className="w-64 border-r bg-card flex flex-col shrink-0 h-screen sticky top-0">
+    <aside className="w-60 border-r border-[#D5DDD2] bg-white flex flex-col shrink-0 h-screen sticky top-0 z-20 select-none">
       {/* Brand Logo Header */}
-      <div className="h-16 flex items-center px-6 border-b gap-3">
-        <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
-          <Repeat className="w-5 h-5" />
-        </div>
-        <div>
-          <span className="font-bold text-base tracking-tight text-foreground block leading-tight">
-            Brightloop
-          </span>
-          <span className="text-[11px] text-muted-foreground">Subscription OS</span>
-        </div>
+      <div className="h-16 flex items-center px-5 border-b border-[#D5DDD2]/70 bg-white">
+        <Logo size="default" href="/dashboard" />
       </div>
 
-      {/* Navigation Sections */}
-      <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto">
-        {renderNavGroup("Core Management", mainNavItems)}
-        {renderNavGroup("Subscription Lifecycle", subscriptionNavItems)}
-        {renderNavGroup("Billing & Finance", billingNavItems)}
-        {renderNavGroup("System & Org", systemNavItems)}
+      {/* Navigation Body */}
+      <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+        {/* Menu Section Header */}
+        <div>
+          <div className="flex items-center gap-2 px-3 pb-2 text-xs font-bold text-[#8C9B8E] uppercase tracking-wider">
+            <Menu className="w-3.5 h-3.5 text-[#1F2622]" />
+            <span>Menu</span>
+          </div>
+          {renderNavLinks(primaryNav)}
+        </div>
+
+        {/* Divider with Center Diamond Node */}
+        <div className="relative py-2 px-3">
+          <div className="h-[1px] w-full bg-[#D5DDD2]" />
+          <div className="absolute left-1/2 -top-[1px] -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#8C9B8E]" />
+        </div>
+
+        {/* Secondary Modules */}
+        <div>
+          <div className="px-3 pb-2 text-[11px] font-bold text-[#8C9B8E] uppercase tracking-wider">
+            Operations
+          </div>
+          {renderNavLinks(secondaryNav)}
+        </div>
       </nav>
 
-      {/* Customer Portal Shortcut & Footer */}
-      <div className="p-3 border-t bg-muted/20 space-y-2">
+      {/* Footer shortcut to Customer Self-Service Portal */}
+      <div className="p-3 border-t border-[#D5DDD2] bg-white space-y-2">
         <Link
           href="/portal"
-          className="flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors border"
+          className="flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-lg text-[#1F2622] bg-[#EBF1EA]/60 hover:bg-[#EBF1EA] transition-colors border border-[#D5DDD2]"
         >
           <span className="flex items-center gap-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-            Customer Portal
+            <ShieldCheck className="w-3.5 h-3.5 text-[#F27B4B]" />
+            <span>Customer Portal</span>
           </span>
-          <ExternalLink className="w-3 h-3 text-muted-foreground" />
+          <ExternalLink className="w-3 h-3 text-[#8C9B8E]" />
         </Link>
-        <div className="px-3 py-1 text-[11px] text-muted-foreground">
-          Hackathon Skeleton v0.1.0
+        <div className="px-2 text-[10px] text-[#8C9B8E] font-medium uppercase tracking-wider text-center">
+          Brightloop • Revenue Overview
         </div>
       </div>
     </aside>

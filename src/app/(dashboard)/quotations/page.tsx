@@ -1,19 +1,50 @@
-import { PlaceholderModule } from "@/components/shared/placeholder-module";
+import { requireUser } from "@/lib/auth/require-user";
+import { listTemplates } from "@/services/templates.service";
+import { QuotationsListClient } from "./quotations-list-client";
+import type { QuotationTemplateWithDetails } from "@/types/subscription-services";
+import type { UserRole } from "@/types";
 
-export default function QuotationsPage() {
+interface QuotationsPageProps {
+  searchParams?: {
+    page?: string;
+    search?: string;
+  };
+}
+
+export default async function QuotationsPage({ searchParams }: QuotationsPageProps) {
+  const page = Number(searchParams?.page) || 1;
+  const search = searchParams?.search || "";
+  const pageSize = 20;
+
+  let role: UserRole = "customer";
+  try {
+    const user = await requireUser();
+    role = user.role;
+  } catch {
+    role = "customer";
+  }
+
+  let templates: QuotationTemplateWithDetails[] = [];
+  let total = 0;
+
+  try {
+    const result = await listTemplates({ page, pageSize, search });
+    templates = result.data;
+    total = result.total;
+  } catch {
+    templates = [];
+    total = 0;
+  }
+
   return (
-    <PlaceholderModule
-      title="Sales Quotations & Proposals"
-      description="Create custom enterprise quotations, discount structures, quote approvals, and conversion to active contracts."
-      assignedMember="Member 2 — Subscriptions & Lifecycle"
-      branch="feature/subscriptions"
-      plannedFeatures={[
-        "Quote builder with itemized plans, add-ons, and customized terms",
-        "Configurable quote expiration dates and approval workflows",
-        "Quote status tracker (Draft, Sent, Accepted, Expired, Rejected)",
-        "One-click conversion from accepted quotation to active subscription",
-        "PDF quote preview and customer sharing link generation",
-      ]}
+    <QuotationsListClient
+      initialTemplates={templates}
+      total={total}
+      currentPage={page}
+      pageSize={pageSize}
+      role={role}
+      initialSearch={search}
     />
   );
 }
+
