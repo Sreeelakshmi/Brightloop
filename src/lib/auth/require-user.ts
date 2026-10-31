@@ -33,3 +33,4 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     return null;
   }
 }
+

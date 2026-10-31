@@ -218,3 +218,4 @@ export type SubscriptionLine = z.infer<typeof subscriptionLineSchema>;
 export type QuotationTemplate = z.infer<typeof quotationTemplateSchema>;
 export type Subscription = z.infer<typeof subscriptionSchema>;
 export type SubscriptionCreate = z.infer<typeof subscriptionCreateSchema>;
+
