@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { Inter_Tight, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const interTight = Inter_Tight({
-  subsets: ["latin"],
-  variable: "--font-inter-tight",
-  display: "swap",
-});
+// Fonts are loaded via globals.css @import at runtime (build-time Google Fonts fetch
+// is skipped so the project builds offline / in sandboxed CI environments).
+// The CSS variables --font-inter-tight and --font-space-grotesk are set there.
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
-  display: "swap",
-});
+// Minimal variable-font shims so layout can reference .variable class names
+const interTight = { variable: "font-inter-tight" };
+const spaceGrotesk = { variable: "font-space-grotesk" };
 
 export const metadata: Metadata = {
   title: "Brightloop | Subscription Control System",
