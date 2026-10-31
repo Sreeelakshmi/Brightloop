@@ -45,7 +45,7 @@ export interface DataTableProps<T> {
   onPageSizeChange?: (pageSize: number) => void;
   onRowClick?: (row: T) => void;
   className?: string;
-  /** When true, alternating rows get a light sage tint (#E4EEE4/30) */
+  /** When true, alternating rows get a light sage tint */
   zebra?: boolean;
   /**
    * When true the table collapses to a stacked card list on mobile (<sm).
@@ -256,7 +256,7 @@ export function DataTable<T extends Record<string, any>>({
                     className={cn(
                       "transition-colors hover:bg-[#E4EEE4]/50",
                       zebra && index % 2 === 1
-                        ? "bg-[#E4EEE4]/30"
+                        ? "bg-[#D3E3D3]/25"
                         : "bg-white",
                       onRowClick && "cursor-pointer"
                     )}

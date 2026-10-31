@@ -215,3 +215,16 @@ export interface ReportRow {
   badgeStatus: SubscriptionStatus | InvoiceStatus;
 }
 
+export interface ReportSummaryStat {
+  label: string;
+  value: string;
+  caption: string;
+  variant: "charcoal" | "grey" | "orange";
+}
+
+export interface ReportSummaryStats {
+  stat1: ReportSummaryStat;
+  stat2: ReportSummaryStat;
+  stat3: ReportSummaryStat;
+}
+

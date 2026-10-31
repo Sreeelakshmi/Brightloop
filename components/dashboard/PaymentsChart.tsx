@@ -87,3 +87,4 @@ export function PaymentsChart({ data }: PaymentsChartProps) {
     </div>
   );
 }
+

@@ -84,3 +84,4 @@ export function SubscriptionsChart({ data }: SubscriptionsChartProps) {
     </div>
   );
 }
+

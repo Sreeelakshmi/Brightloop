@@ -4,6 +4,7 @@ import {
   PaginatedResult,
   PaymentsByMethodPoint,
   ReportRow,
+  ReportSummaryStats,
   ReportTab,
   RevenueOverTimePoint,
   SortParams,
@@ -12,6 +13,7 @@ import {
 } from "@/types";
 import { getMockStore } from "./mock-generator";
 import { supabase } from "@/lib/supabase";
+import { formatMoney, formatNumber } from "@/lib/formatters";
 
 /**
  * Checks whether mock telemetry should be returned
@@ -356,6 +358,214 @@ export async function getOverdueInvoices(
 // 6. REPORT ROWS
 // ==========================================
 
+function matchesCustomer(
+  customer: { id?: string; name?: string; company?: string } | undefined,
+  customerId?: string
+): boolean {
+  if (!customerId || customerId === "all" || customerId === "customer" || customerId === "all-customers") {
+    return true;
+  }
+  if (!customer) return false;
+  const target = customerId.toLowerCase().trim();
+  const idMatch = customer.id?.toLowerCase() === target;
+  const companySlug = customer.company?.toLowerCase().replace(/\s+/g, "-");
+  const nameSlug = customer.name?.toLowerCase().replace(/\s+/g, "-");
+  const companyMatch = customer.company?.toLowerCase().includes(target);
+  const nameMatch = customer.name?.toLowerCase().includes(target);
+  return idMatch || companySlug === target || nameSlug === target || Boolean(companyMatch) || Boolean(nameMatch);
+}
+
+function matchesPlan(
+  plan: { id?: string; name?: string; code?: string } | undefined,
+  planId?: string
+): boolean {
+  if (!planId || planId === "all" || planId === "plan" || planId === "all-plans") {
+    return true;
+  }
+  if (!plan) return false;
+  const target = planId.toLowerCase().trim();
+  const idMatch = plan.id?.toLowerCase() === target;
+  const codeMatch = plan.code?.toLowerCase() === target;
+  const nameSlug = plan.name?.toLowerCase().replace(/\s+/g, "-");
+  const nameMatch = plan.name?.toLowerCase().includes(target);
+  return idMatch || codeMatch || nameSlug === target || Boolean(nameMatch);
+}
+
+function matchesStatus(status: string | undefined, filterStatus?: string): boolean {
+  if (!filterStatus || filterStatus === "all" || filterStatus === "all-statuses" || filterStatus === "status") {
+    return true;
+  }
+  if (!status) return false;
+  return status.toLowerCase() === filterStatus.toLowerCase();
+}
+
+function matchesPaymentMethod(method: string | undefined, filterMethod?: string): boolean {
+  if (!filterMethod || filterMethod === "all" || filterMethod === "all-methods" || filterMethod === "payment-method") {
+    return true;
+  }
+  if (!method) return false;
+  const normMethod = method.toLowerCase().replace(/_/g, "-");
+  const normFilter = filterMethod.toLowerCase().replace(/_/g, "-");
+  return normMethod === normFilter || normMethod.includes(normFilter);
+}
+
+function matchesDate(dateStr: string | undefined, from?: string, to?: string): boolean {
+  if (!dateStr) return true;
+  const date = dateStr.split("T")[0];
+  if (from && date < from) return false;
+  if (to && date > to) return false;
+  return true;
+}
+
+export async function getReportSummary(
+  tab: ReportTab = "revenue",
+  filters: TelemetryFilters = {}
+): Promise<ReportSummaryStats> {
+  if (shouldUseMockData()) {
+    const store = getMockStore();
+
+    if (tab === "subscriptions") {
+      let subs = store.subscriptions;
+      if (filters.customerId) subs = subs.filter((s) => matchesCustomer(s.customer, filters.customerId));
+      if (filters.planId) subs = subs.filter((s) => matchesPlan(s.plan, filters.planId));
+      if (filters.status) subs = subs.filter((s) => matchesStatus(s.status, filters.status));
+      if (filters.from || filters.to) subs = subs.filter((s) => matchesDate(s.startDate, filters.from, filters.to));
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        subs = subs.filter((s) => s.subscriptionNumber.toLowerCase().includes(q) || s.customer?.company.toLowerCase().includes(q));
+      }
+
+      const totalValue = subs.reduce((sum, s) => sum + s.totalAmount, 0);
+      const activeCount = subs.filter((s) => s.status === "active").length;
+
+      return {
+        stat1: {
+          label: "TOTAL SUBSCRIPTIONS",
+          value: formatNumber(subs.length),
+          caption: "Matching active query",
+          variant: "charcoal",
+        },
+        stat2: {
+          label: "CONTRACTED VALUE",
+          value: formatMoney(totalValue),
+          caption: "Cumulative portfolio rate",
+          variant: "grey",
+        },
+        stat3: {
+          label: "ACTIVE SUBSCRIPTIONS",
+          value: formatNumber(activeCount),
+          caption: `${((activeCount / (subs.length || 1)) * 100).toFixed(1)}% currently active`,
+          variant: "orange",
+        },
+      };
+    }
+
+    if (tab === "payments") {
+      let payments = store.payments;
+      if (filters.customerId) payments = payments.filter((p) => matchesCustomer(p.customer, filters.customerId));
+      if (filters.paymentMethod) payments = payments.filter((p) => matchesPaymentMethod(p.method, filters.paymentMethod));
+      if (filters.status) payments = payments.filter((p) => matchesStatus(p.status, filters.status));
+      if (filters.from || filters.to) payments = payments.filter((p) => matchesDate(p.paymentDate, filters.from, filters.to));
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        payments = payments.filter((p) => p.paymentNo.toLowerCase().includes(q) || p.customer?.company.toLowerCase().includes(q));
+      }
+
+      const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
+      const avgPayment = payments.length > 0 ? Math.round(totalAmount / payments.length) : 0;
+
+      return {
+        stat1: {
+          label: "TOTAL PAYMENTS",
+          value: formatNumber(payments.length),
+          caption: "Processed settlements",
+          variant: "charcoal",
+        },
+        stat2: {
+          label: "SETTLED VOLUME",
+          value: formatMoney(totalAmount),
+          caption: "Gross collected payments",
+          variant: "grey",
+        },
+        stat3: {
+          label: "AVG PAYMENT SIZE",
+          value: formatMoney(avgPayment),
+          caption: "Average settlement ticket",
+          variant: "grey",
+        },
+      };
+    }
+
+    // Revenue or Invoices
+    let invoices = store.invoices;
+    if (filters.customerId) invoices = invoices.filter((i) => matchesCustomer(i.customer, filters.customerId));
+    if (filters.status) invoices = invoices.filter((i) => matchesStatus(i.status, filters.status));
+    if (filters.from || filters.to) invoices = invoices.filter((i) => matchesDate(i.issueDate, filters.from, filters.to));
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      invoices = invoices.filter((i) => i.invoiceNo.toLowerCase().includes(q) || i.customer?.company.toLowerCase().includes(q));
+    }
+
+    const totalBilled = invoices.reduce((sum, i) => sum + i.totalAmount, 0);
+    const totalBalance = invoices.reduce((sum, i) => sum + i.balance, 0);
+    const totalCollected = totalBilled - totalBalance;
+    const overdueList = invoices.filter((i) => i.status === "overdue");
+
+    if (tab === "invoices") {
+      const paidCount = invoices.filter((i) => i.status === "paid").length;
+      return {
+        stat1: {
+          label: "TOTAL INVOICES",
+          value: formatNumber(invoices.length),
+          caption: "Generated in period",
+          variant: "charcoal",
+        },
+        stat2: {
+          label: "PAID INVOICES",
+          value: formatNumber(paidCount),
+          caption: `${paidCount} paid in full`,
+          variant: "grey",
+        },
+        stat3: {
+          label: "OVERDUE INVOICES",
+          value: formatNumber(overdueList.length),
+          caption: `${formatMoney(totalBalance)} outstanding`,
+          variant: "orange",
+        },
+      };
+    }
+
+    // tab === "revenue"
+    return {
+      stat1: {
+        label: "TOTAL BILLED",
+        value: formatMoney(totalBilled),
+        caption: "Gross invoiced revenue",
+        variant: "charcoal",
+      },
+      stat2: {
+        label: "TOTAL COLLECTED",
+        value: formatMoney(totalCollected),
+        caption: "Realized cashflow",
+        variant: "grey",
+      },
+      stat3: {
+        label: "OUTSTANDING BALANCE",
+        value: formatMoney(totalBalance),
+        caption: "Pending collection",
+        variant: "orange",
+      },
+    };
+  }
+
+  // Fallback defaults for Supabase
+  return {
+    stat1: { label: "TOTAL", value: "—", caption: "Loading", variant: "charcoal" },
+    stat2: { label: "VOLUME", value: "—", caption: "Loading", variant: "grey" },
+    stat3: { label: "OUTSTANDING", value: "—", caption: "Loading", variant: "orange" },
+  };
+}
+
 export async function getReportRows(
   tab: ReportTab = "revenue",
   filters: TelemetryFilters = {},
@@ -368,7 +578,16 @@ export async function getReportRows(
     let rows: ReportRow[] = [];
 
     if (tab === "revenue" || tab === "invoices") {
-      rows = store.invoices.map((inv) => ({
+      let invList = store.invoices;
+      if (filters.customerId) invList = invList.filter((i) => matchesCustomer(i.customer, filters.customerId));
+      if (filters.status) invList = invList.filter((i) => matchesStatus(i.status, filters.status));
+      if (filters.from || filters.to) invList = invList.filter((i) => matchesDate(i.issueDate, filters.from, filters.to));
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        invList = invList.filter((i) => i.invoiceNo.toLowerCase().includes(q) || i.customer?.company.toLowerCase().includes(q));
+      }
+
+      rows = invList.map((inv) => ({
         id: inv.id,
         code: inv.invoiceNo,
         name: inv.customer?.company || "Unknown",
@@ -380,7 +599,17 @@ export async function getReportRows(
         badgeStatus: inv.status,
       }));
     } else if (tab === "subscriptions") {
-      rows = store.subscriptions.map((sub) => ({
+      let subList = store.subscriptions;
+      if (filters.customerId) subList = subList.filter((s) => matchesCustomer(s.customer, filters.customerId));
+      if (filters.planId) subList = subList.filter((s) => matchesPlan(s.plan, filters.planId));
+      if (filters.status) subList = subList.filter((s) => matchesStatus(s.status, filters.status));
+      if (filters.from || filters.to) subList = subList.filter((s) => matchesDate(s.startDate, filters.from, filters.to));
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        subList = subList.filter((s) => s.subscriptionNumber.toLowerCase().includes(q) || s.customer?.company.toLowerCase().includes(q) || s.plan?.name.toLowerCase().includes(q));
+      }
+
+      rows = subList.map((sub) => ({
         id: sub.id,
         code: sub.subscriptionNumber,
         name: sub.customer?.company || "Unknown",
@@ -392,7 +621,17 @@ export async function getReportRows(
         badgeStatus: sub.status,
       }));
     } else if (tab === "payments") {
-      rows = store.payments.map((p) => ({
+      let payList = store.payments;
+      if (filters.customerId) payList = payList.filter((p) => matchesCustomer(p.customer, filters.customerId));
+      if (filters.paymentMethod) payList = payList.filter((p) => matchesPaymentMethod(p.method, filters.paymentMethod));
+      if (filters.status) payList = payList.filter((p) => matchesStatus(p.status, filters.status));
+      if (filters.from || filters.to) payList = payList.filter((p) => matchesDate(p.paymentDate, filters.from, filters.to));
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        payList = payList.filter((p) => p.paymentNo.toLowerCase().includes(q) || p.customer?.company.toLowerCase().includes(q) || p.reference.toLowerCase().includes(q));
+      }
+
+      rows = payList.map((p) => ({
         id: p.id,
         code: p.paymentNo,
         name: p.customer?.company || "Unknown",
@@ -412,11 +651,11 @@ export async function getReportRows(
         if (typeof aVal === "number" && typeof bVal === "number") {
           const diff = sort.direction === "asc" ? aVal - bVal : bVal - aVal;
           if (diff !== 0) return diff;
-          return a.invoiceNo.localeCompare(b.invoiceNo);
+          return a.code.localeCompare(b.code);
         }
         return sort.direction === "asc"
-          ? String(aVal).localeCompare(String(bVal))
-          : String(bVal).localeCompare(String(aVal));
+          ? String(aVal ?? "").localeCompare(String(bVal ?? ""))
+          : String(bVal ?? "").localeCompare(String(aVal ?? ""));
       });
     }
 
