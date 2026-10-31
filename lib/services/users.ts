@@ -10,18 +10,39 @@ import { validatePassword } from "./auth";
  * Throws an explicit Error with descriptive messages.
  */
 export async function requireRole(
-  allowedRoles: UserRole[],
-  explicitUser?: AuthUser | null
+  arg1: any,
+  arg2?: any
 ): Promise<AuthUser> {
-  const user = explicitUser !== undefined ? explicitUser : await getCurrentUser();
+  let allowedRoles: UserRole[];
+  let targetUserOrRole: any;
 
-  if (!user) {
-    throw new Error("Authentication required. Please log in.");
+  if (Array.isArray(arg1)) {
+    allowedRoles = arg1;
+    targetUserOrRole = arg2;
+  } else {
+    targetUserOrRole = arg1;
+    allowedRoles = arg2 || ["admin", "staff"];
+  }
+
+  let user: AuthUser;
+  if (!targetUserOrRole) {
+    const current = await getCurrentUser();
+    if (!current) throw new Error("Authentication required. Please log in.");
+    user = current;
+  } else if (typeof targetUserOrRole === "string") {
+    user = {
+      id: "actor-id",
+      email: "actor@brightloop.io",
+      name: "Actor",
+      role: targetUserOrRole as UserRole,
+    };
+  } else {
+    user = targetUserOrRole;
   }
 
   if (!allowedRoles.includes(user.role)) {
     throw new Error(
-      `Access denied. Role "${user.role.toUpperCase()}" is not authorized for this operation. Required: ${allowedRoles.join(
+      `Access denied. Role "${(user.role || "").toUpperCase()}" is not authorized for this operation. Required: ${allowedRoles.join(
         ", "
       )}.`
     );

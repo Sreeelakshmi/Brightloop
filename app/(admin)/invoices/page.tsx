@@ -1,14 +1,12 @@
-import { PageHeader } from "@/components/ui-shared";
+import { listInvoices } from "@/lib/services/invoices";
+import { getCurrentUser } from "@/lib/auth";
+import { InvoicesClient } from "@/components/admin/InvoicesClient";
 
-export default function InvoicesPlaceholderPage() {
-  return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <PageHeader
-        title="INVOICE LEDGER"
-        subtitle="Accounts Receivable & Billing Invoices"
-        logDate="31.10.2026"
-      />
-    </div>
-  );
+export const dynamic = "force-dynamic";
+
+export default async function InvoicesPage() {
+  const user = await getCurrentUser();
+  const result = await listInvoices({ pageSize: 100 });
+
+  return <InvoicesClient initialInvoices={result.data} isAdmin={user?.role === "admin"} />;
 }
-

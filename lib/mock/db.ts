@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { MockUser, PasswordResetToken, DevEmail, generateSeedUsers } from "./seed";
-import { getMockStore, MockStore } from "../data/mock-generator";
+import { generateFreshMockStore, MockStore } from "../data/mock-generator";
 
 export interface MockDatabaseState {
   users: MockUser[];
@@ -21,7 +21,11 @@ function loadFromDisk(): MockDatabaseState | null {
   try {
     if (typeof window === "undefined" && fs.existsSync(DATA_FILE)) {
       const raw = fs.readFileSync(DATA_FILE, "utf-8");
-      return JSON.parse(raw) as MockDatabaseState;
+      const parsed = JSON.parse(raw) as MockDatabaseState;
+      // Ensure schema freshness
+      if (parsed?.store?.products && parsed?.store?.taxes && parsed?.store?.discounts) {
+        return parsed;
+      }
     }
   } catch (err) {
     console.warn("[MockDB] Could not load persisted demo data, falling back to seed.", err);
@@ -59,7 +63,7 @@ export function getMockDb(): MockDatabaseState {
     users: generateSeedUsers(),
     tokens: [],
     emails: [],
-    store: getMockStore(),
+    store: generateFreshMockStore(),
   };
 
   persistToDisk(memoryDb);
@@ -76,59 +80,57 @@ export function resetMockDb(): MockDatabaseState {
     users: generateSeedUsers(),
     tokens: [],
     emails: [],
-    store: getMockStore(),
+    store: generateFreshMockStore(),
   };
   persistToDisk(memoryDb);
   loginAttempts.clear();
   return memoryDb;
 }
 
-// ── Rate Limiter ─────────────────────────────────────────────────────────────
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+// Rate Limiting Helpers
+interface RateLimitEntry {
+  attempts: number;
+  lockedUntil: number;
+}
 
-export function checkRateLimit(key: string): { allowed: boolean; remainingAttempts: number; retryAfterSeconds: number } {
+const rateLimitStore = new Map<string, RateLimitEntry>();
+
+export function checkRateLimit(key: string): { allowed: boolean; retryAfterSeconds: number } {
+  const entry = rateLimitStore.get(key);
+  if (!entry) return { allowed: true, retryAfterSeconds: 0 };
+
   const now = Date.now();
-  const record = loginAttempts.get(key);
-
-  if (!record) {
-    return { allowed: true, remainingAttempts: MAX_FAILED_ATTEMPTS, retryAfterSeconds: 0 };
+  if (entry.lockedUntil > now) {
+    const retryAfterSeconds = Math.ceil((entry.lockedUntil - now) / 1000);
+    return { allowed: false, retryAfterSeconds };
   }
 
-  if (record.lockedUntil > now) {
-    return {
-      allowed: false,
-      remainingAttempts: 0,
-      retryAfterSeconds: Math.ceil((record.lockedUntil - now) / 1000),
-    };
-  }
-
-  // Lock expired
-  if (record.lockedUntil <= now && record.lockedUntil > 0) {
-    loginAttempts.delete(key);
-    return { allowed: true, remainingAttempts: MAX_FAILED_ATTEMPTS, retryAfterSeconds: 0 };
-  }
-
-  return {
-    allowed: true,
-    remainingAttempts: Math.max(0, MAX_FAILED_ATTEMPTS - record.count),
-    retryAfterSeconds: 0,
-  };
+  return { allowed: true, retryAfterSeconds: 0 };
 }
 
-export function recordFailedLogin(key: string) {
+export function recordFailedLogin(key: string): void {
   const now = Date.now();
-  const record = loginAttempts.get(key) || { count: 0, lockedUntil: 0 };
-  record.count += 1;
+  const entry = rateLimitStore.get(key) || { attempts: 0, lockedUntil: 0 };
+  entry.attempts += 1;
 
-  if (record.count >= MAX_FAILED_ATTEMPTS) {
-    record.lockedUntil = now + LOCKOUT_MS;
+  if (entry.attempts >= 5) {
+    entry.lockedUntil = now + 15 * 60 * 1000; // 15 min lock
   }
 
-  loginAttempts.set(key, record);
+  rateLimitStore.set(key, entry);
 }
 
-export function recordSuccessfulLogin(key: string) {
-  loginAttempts.delete(key);
+export function recordSuccessfulLogin(key: string): void {
+  rateLimitStore.delete(key);
 }
 
+export function getLoginAttempts(email: string) {
+  const key = `login:${email.toLowerCase().trim()}`;
+  const entry = rateLimitStore.get(key) || { attempts: 0, lockedUntil: 0 };
+  return { count: entry.attempts, lockedUntil: entry.lockedUntil };
+}
+
+export function resetLoginAttempts(email: string) {
+  const key = `login:${email.toLowerCase().trim()}`;
+  rateLimitStore.delete(key);
+}

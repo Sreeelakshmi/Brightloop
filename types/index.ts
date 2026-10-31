@@ -1,6 +1,6 @@
 /**
  * Brightloop Telemetry & Billing Type Definitions
- * Shared types for Admin Dashboard, Reports, and Customer Portal.
+ * Shared types for Admin Dashboard, Reports, Customer Portal, and Service Layer.
  */
 
 // ==========================================
@@ -29,11 +29,17 @@ export type PaymentMethod =
   | "direct_debit"
   | "credit_card"
   | "wire_transfer"
-  | "upi";
+  | "upi"
+  | "cash"
+  | "cheque";
 
 export type PaymentStatus = "succeeded" | "pending" | "failed";
 
-export type BillingCycle = "monthly" | "quarterly" | "annual";
+export type BillingCycle = "daily" | "weekly" | "monthly" | "quarterly" | "annual" | "yearly";
+
+export type PlanBillingPeriod = "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
+
+export type ProductType = "service" | "consumable" | "storable";
 
 export type ReportTab = "revenue" | "subscriptions" | "invoices" | "payments";
 
@@ -52,15 +58,42 @@ export interface Customer {
   createdAt: string;
 }
 
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  attributeName: string; // e.g. "Brand"
+  attributeValue: string; // e.g. "Odoo", "Standard"
+  extraPrice: number; // e.g. 560
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  type: ProductType;
+  salesPrice: number;
+  costPrice: number;
+  notes?: string;
+  archived?: boolean;
+  variants: ProductVariant[];
+  createdAt?: string;
+}
+
 export interface Plan {
   id: string;
   name: string;
   code: string;
   billingCycle: BillingCycle;
+  billingPeriod?: PlanBillingPeriod;
   amount: number;
+  price?: number;
   currency: string;
   description?: string;
   active: boolean;
+  minimumQuantity?: number;
+  availableFrom?: string;
+  availableTo?: string;
+  autoClose?: boolean;
+  closableEarly?: boolean;
   renewable?: boolean;
   pausable?: boolean;
   closable?: boolean;
@@ -69,10 +102,25 @@ export interface Plan {
 export interface SubscriptionLine {
   id: string;
   subscriptionId: string;
+  productId?: string;
+  variantId?: string;
   description: string;
   quantity: number;
   unitPrice: number;
+  taxRate?: number;
+  taxAmount?: number;
+  discountAmount?: number;
   amount: number;
+}
+
+export interface SubscriptionStatusHistory {
+  id: string;
+  subscriptionId: string;
+  fromStatus: SubscriptionStatus;
+  toStatus: SubscriptionStatus;
+  changedBy: string;
+  changedAt: string;
+  reason?: string;
 }
 
 export interface Subscription {
@@ -86,18 +134,78 @@ export interface Subscription {
   startDate: string;
   endDate: string;
   renewalDate: string;
+  nextBillingDate?: string;
+  paymentTerms?: string;
+  paused?: boolean;
   totalAmount: number;
   currency: string;
   lines?: SubscriptionLine[];
+  history?: SubscriptionStatusHistory[];
+  validUntil?: string; // For quotations
   createdAt: string;
+}
+
+export interface QuotationTemplateLine {
+  id?: string;
+  productId: string;
+  variantId?: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface QuotationTemplate {
+  id: string;
+  name: string;
+  validityDays: number;
+  planId: string;
+  lines: QuotationTemplateLine[];
+  createdAt?: string;
+}
+
+export interface TaxRule {
+  id: string;
+  name: string;
+  type: "percentage" | "fixed";
+  rate: number;
+  applicableProducts: string[]; // ["all"] or list of product IDs
+  isInclusive: boolean;
+  active: boolean;
+  createdAt?: string;
+}
+
+export interface DiscountRule {
+  id: string;
+  code: string;
+  name: string;
+  type: "percentage" | "fixed";
+  value: number;
+  minPurchaseAmount?: number;
+  minQuantity?: number;
+  startDate: string;
+  endDate: string;
+  usageLimit?: number;
+  usageCount: number;
+  scope: "subscription" | "product";
+  applicableProducts?: string[];
+  active: boolean;
+  createdAt?: string;
 }
 
 export interface InvoiceLine {
   id: string;
   invoiceId: string;
+  productId?: string;
   description: string;
   quantity: number;
   unitPrice: number;
+  taxAmount?: number;
+  discountAmount?: number;
+  amount: number;
+}
+
+export interface InvoiceTaxBreakdown {
+  name: string;
+  rate: number;
   amount: number;
 }
 
@@ -105,13 +213,20 @@ export interface Invoice {
   id: string;
   invoiceNo: string;
   subscriptionId?: string;
+  periodKey?: string; // Idempotency key: subId_periodStart_periodEnd
   customerId: string;
   customer?: Customer;
   issueDate: string;
   dueDate: string;
   daysOverdue: number;
+  subtotal?: number;
+  taxTotal?: number;
+  discountTotal?: number;
+  taxBreakdown?: InvoiceTaxBreakdown[];
+  discountCode?: string;
   totalAmount: number;
   balance: number;
+  paidAmount?: number;
   currency: string;
   status: InvoiceStatus;
   lines?: InvoiceLine[];
@@ -130,8 +245,20 @@ export interface Payment {
   method: PaymentMethod;
   status: PaymentStatus;
   reference: string;
+  note?: string;
   paymentDate: string;
   createdAt: string;
+}
+
+export interface BillingRun {
+  id: string;
+  runDate: string;
+  runBy: string;
+  subscriptionsProcessed: number;
+  invoicesCreated: number;
+  invoicesSkipped: number;
+  failedCount: number;
+  errors: string[];
 }
 
 // ==========================================
@@ -230,4 +357,3 @@ export interface ReportSummaryStats {
   stat2: ReportSummaryStat;
   stat3: ReportSummaryStat;
 }
-

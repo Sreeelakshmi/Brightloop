@@ -18,6 +18,13 @@ import {
   ChevronRight,
   Shield,
   X,
+  Package,
+  Calendar,
+  FileCheck,
+  Copy,
+  Receipt,
+  Percent,
+  PlayCircle,
 } from "lucide-react";
 
 export interface NavItem {
@@ -49,6 +56,26 @@ const navItems: NavItem[] = [
     icon: Layers,
   },
   {
+    title: "Quotations",
+    href: "/quotations",
+    icon: FileCheck,
+  },
+  {
+    title: "Templates",
+    href: "/quotation-templates",
+    icon: Copy,
+  },
+  {
+    title: "Products",
+    href: "/products",
+    icon: Package,
+  },
+  {
+    title: "Plans",
+    href: "/plans",
+    icon: Calendar,
+  },
+  {
     title: "Invoices",
     href: "/invoices",
     icon: FileText,
@@ -57,6 +84,24 @@ const navItems: NavItem[] = [
     title: "Payments",
     href: "/payments",
     icon: CreditCard,
+  },
+  {
+    title: "Billing Runs",
+    href: "/billing-runs",
+    icon: PlayCircle,
+    adminOnly: true,
+  },
+  {
+    title: "Taxes",
+    href: "/taxes",
+    icon: Receipt,
+    adminOnly: true,
+  },
+  {
+    title: "Discounts",
+    href: "/discounts",
+    icon: Percent,
+    adminOnly: true,
   },
   {
     title: "Staff",

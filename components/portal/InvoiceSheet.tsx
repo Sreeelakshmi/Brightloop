@@ -57,11 +57,7 @@ export function InvoiceSheet({ invoice, payments, className }: InvoiceSheetProps
   const isOverdue = invoice.status === "overdue";
 
   const handleDownload = () => {
-    // TODO: Member 3 – wire to PDF endpoint when available
-    // e.g. fetch(`/api/invoices/${invoice.id}/pdf`) then trigger download
-    alert(
-      `[TODO — Member 3] PDF download for ${invoice.invoiceNo} will be wired to the billing service PDF endpoint.`
-    );
+    window.print();
   };
 
   return (

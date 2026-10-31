@@ -3,8 +3,31 @@
 import * as React from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { FilterBar, FilterState } from "@/components/ui-shared";
-import { getMockStore } from "@/lib/data/mock-generator";
 import { ReportTab } from "@/types";
+
+const DEFAULT_CUSTOMER_OPTIONS = [
+  "All Customers",
+  "Tata Consultancy Services",
+  "Infosys Ltd",
+  "Wipro Enterprises",
+  "Reliance Industries",
+  "HCL Technologies",
+  "Mahindra & Mahindra",
+  "Larsen & Toubro",
+  "Bharti Airtel",
+  "Sun Pharma",
+  "ITC Infotech",
+];
+
+const DEFAULT_PLAN_OPTIONS = [
+  "All Plans",
+  "Daily Essential",
+  "Weekly Growth",
+  "Standard Monthly",
+  "Monthly Business Pro",
+  "Annual Enterprise",
+  "Enterprise Plus Annual",
+];
 
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
@@ -59,30 +82,26 @@ export function readReportsFiltersFromUrl(sp: URLSearchParams): FilterState {
 
 interface ReportsFilterBarProps {
   tab: ReportTab;
+  customerOptions?: string[];
+  planOptions?: string[];
 }
 
-export function ReportsFilterBar({ tab }: ReportsFilterBarProps) {
+export function ReportsFilterBar({
+  tab,
+  customerOptions = DEFAULT_CUSTOMER_OPTIONS,
+  planOptions = DEFAULT_PLAN_OPTIONS,
+}: ReportsFilterBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const filters = readReportsFiltersFromUrl(searchParams);
 
   const store = React.useMemo(() => {
-    try {
-      const s = getMockStore();
-      const customers = [
-        "All Customers",
-        ...Array.from(new Set(s.subscriptions.slice(0, 50).map((sub) => sub.customer?.company ?? ""))).filter(Boolean).slice(0, 15),
-      ];
-      const plans = [
-        "All Plans",
-        ...Array.from(new Set(s.subscriptions.map((sub) => sub.plan?.name ?? ""))).filter(Boolean),
-      ];
-      return { customers, plans };
-    } catch {
-      return { customers: ["All Customers"], plans: ["All Plans"] };
-    }
-  }, []);
+    return {
+      customers: customerOptions,
+      plans: planOptions,
+    };
+  }, [customerOptions, planOptions]);
 
   const pushFilters = (f: FilterState) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -145,4 +164,3 @@ export function ReportsFilterBar({ tab }: ReportsFilterBarProps) {
     </div>
   );
 }
-

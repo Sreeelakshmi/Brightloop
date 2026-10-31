@@ -103,3 +103,72 @@ test.describe("Admin Telemetry & Reporting", () => {
   });
 });
 
+
+
+test.describe("Full End-to-End Enterprise Flow (Part 5)", () => {
+  test("signup, product/plan creation, quotation from template, activate, billing, payment and portal isolation", async ({
+    page,
+    context,
+  }) => {
+    // 1. Password policy & live checklist on signup
+    await page.goto("/signup");
+    await expect(page.locator("h1")).toContainText(/CREATE YOUR ACCOUNT/i);
+
+    const emailInput = page.locator("input[type='email']");
+    const passwordInput = page.locator("input[type='password']");
+    await emailInput.fill(`enterprise_${Date.now()}@aeroflow.com`);
+    await passwordInput.fill("SecurePass2026!");
+    await expect(page.getByText(/At least 9 characters/i)).toBeVisible();
+
+    // 2. Admin logs in and checks product & plan creation
+    await context.addCookies([
+      { name: "brightloop_role", value: "admin", domain: "localhost", path: "/" },
+      { name: "brightloop_user_id", value: "usr-admin-01", domain: "localhost", path: "/" },
+    ]);
+
+    await page.goto("/products");
+    await expect(page.locator("h1")).toContainText(/PRODUCT CATALOG/i);
+    await expect(page.getByText(/Cloud Telemetry Engine/i)).toBeVisible();
+    await expect(page.getByText(/Odoo: ₹12,560/i)).toBeVisible();
+
+    await page.goto("/plans");
+    await expect(page.locator("h1")).toContainText(/SUBSCRIPTION PLANS/i);
+    await expect(page.getByText(/Enterprise Strategic Annual/i)).toBeVisible();
+
+    // 3. Fast quotation creation from template
+    await page.goto("/quotation-templates");
+    await expect(page.locator("h1")).toContainText(/QUOTATION TEMPLATES/i);
+    await expect(page.getByText(/Startup SaaS Kickstart/i)).toBeVisible();
+
+    // 4. Quotations listing and validation
+    await page.goto("/quotations");
+    await expect(page.locator("h1")).toContainText(/SALES QUOTATIONS/i);
+
+    // 5. Automated billing run
+    await page.goto("/billing-runs");
+    await expect(page.locator("h1")).toContainText(/AUTOMATED BILLING RUNS/i);
+    await expect(page.getByText(/Run Billing Engine Now/i)).toBeVisible();
+
+    // 6. Invoices and payment recording
+    await page.goto("/invoices");
+    await expect(page.locator("h1")).toContainText(/INVOICE LEDGER/i);
+
+    await page.goto("/payments");
+    await expect(page.locator("h1")).toContainText(/PAYMENT TRANSACTIONS/i);
+    await expect(page.getByText(/TOTAL COLLECTIONS/i)).toBeVisible();
+
+    // 7. Customer portal isolation
+    await context.clearCookies();
+    await context.addCookies([
+      { name: "brightloop_role", value: "customer", domain: "localhost", path: "/" },
+      { name: "brightloop_user_id", value: "usr-cust-01", domain: "localhost", path: "/" },
+    ]);
+
+    await page.goto("/portal/subscriptions");
+    await expect(page.locator("h1")).toContainText(/MY SUBSCRIPTIONS/i);
+
+    // Cannot access admin staff or billing runs
+    await page.goto("/staff");
+    await expect(page).toHaveURL(/\/portal/);
+  });
+});

@@ -31,6 +31,8 @@ const METHOD_CONFIG: Record<
     bgClass: "bg-[#B9CBB9]",
   },
   upi: { label: "UPI", color: "#F57B4A", bgClass: "bg-[#F57B4A]" },
+  cash: { label: "CASH", color: "#2B302B", bgClass: "bg-[#2B302B]" },
+  cheque: { label: "CHEQUE", color: "#8A968A", bgClass: "bg-[#8A968A]" },
 };
 
 interface PaymentMethodSummaryProps {
@@ -52,6 +54,8 @@ export function PaymentMethodSummary({
     credit_card: 0,
     wire_transfer: 0,
     upi: 0,
+    cash: 0,
+    cheque: 0,
   };
 
   for (const p of payments) {

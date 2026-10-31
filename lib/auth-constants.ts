@@ -11,3 +11,4 @@ export interface AuthUser {
 
 export const AUTH_COOKIE_NAME = "brightloop_role";
 export const USER_ID_COOKIE = "brightloop_user_id";
+

@@ -1,7 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth";
 import { getMySubscription, getMyInvoices } from "@/lib/data/portal";
 import { StatusBadge, PageHeader } from "@/components/ui-shared";
 import { SubscriptionStepper } from "@/components/portal/SubscriptionStepper";
@@ -18,12 +18,16 @@ interface SubscriptionDetailPageProps {
 export default async function SubscriptionDetailPage({
   params,
 }: SubscriptionDetailPageProps) {
-  const user = await getCurrentUser();
-  const customerId = user?.customerId || "cust-001";
+  const user = await requireAuth(["customer"]);
+  const customerId = user.customerId;
+
+  if (!customerId) {
+    notFound();
+  }
 
   const subscription = await getMySubscription(params.id, customerId);
 
-  if (!subscription) {
+  if (!subscription || subscription.customerId !== customerId) {
     notFound();
   }
 
@@ -50,41 +54,28 @@ export default async function SubscriptionDetailPage({
         </Link>
       </div>
 
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b-[1.5px] border-[#B9CBB9]">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-[#2B302B] font-mono">
-              {subscription.subscriptionNumber}
-            </h1>
-            <StatusBadge status={subscription.status} />
-          </div>
-          <p className="text-xs font-mono text-[#8A968A] mt-1">
-            Plan: {subscription.plan?.name || "Enterprise Tier"} • Customer: {subscription.customer?.company || "Account"}
-          </p>
-        </div>
+      {/* Header with Title and Telemetry Progress Bar */}
+      <PageHeader
+        title={subscription.subscriptionNumber}
+        subtitle={`${subscription.plan?.name || "Standard Plan"} • ${subscription.customer?.name || "Customer"}`}
+        logDate={logDate}
+        progressSegments={{ charcoal: 60, grey: 30, orange: 10 }}
+      />
 
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A968A]">
-            LOG: {logDate}
-          </span>
-        </div>
-      </div>
-
-      {/* Horizontal Status Stepper with Hexagon Nodes */}
+      {/* 5-Stage Stepper: Draft -> Quotation -> Confirmed -> Active -> Closed */}
       <SubscriptionStepper currentStatus={subscription.status} />
 
-      {/* Action Buttons (Renew, Pause, Close - with Plan Permission Gating) */}
-      <SubscriptionActionButtons subscription={subscription} />
-
-      {/* Renewal & Billing Information Panel */}
+      {/* Renewal Info Panel */}
       <RenewalInfoPanel subscription={subscription} />
 
-      {/* Itemized Order Lines Table + Totals Box */}
+      {/* Order Lines Table */}
       <OrderLinesTable subscription={subscription} />
 
-      {/* Associated Invoices History Tab */}
+      {/* Associated Invoices Tab */}
       <SubscriptionInvoicesTab invoices={relevantInvoices} />
+
+      {/* Contract Lifecycle Actions */}
+      <SubscriptionActionButtons subscription={subscription} />
     </div>
   );
 }

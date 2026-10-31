@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { StaffMember } from "@/lib/services/users";
+import type { StaffMember } from "@/lib/services/users";
 import { handleCreateStaff, handleToggleStaffStatus } from "@/app/actions/auth-actions";
 import { PasswordChecklist } from "@/components/auth/PasswordChecklist";
 import { StatusBadge } from "@/components/ui-shared/StatusBadge";

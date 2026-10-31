@@ -12,15 +12,24 @@ export function middleware(request: NextRequest) {
     roleCookie && ["admin", "staff", "customer"].includes(roleCookie)
   );
 
-  const isAdminOnlyRoute = pathname.startsWith("/staff");
+  const isAdminOnlyRoute =
+    pathname.startsWith("/staff") ||
+    pathname.startsWith("/taxes") ||
+    pathname.startsWith("/discounts") ||
+    pathname.startsWith("/billing-runs");
 
   const isStaffOrAdminRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/reports") ||
     pathname.startsWith("/customers") ||
     pathname.startsWith("/subscriptions") ||
+    pathname.startsWith("/quotations") ||
+    pathname.startsWith("/quotation-templates") ||
+    pathname.startsWith("/products") ||
+    pathname.startsWith("/plans") ||
     pathname.startsWith("/invoices") ||
-    pathname.startsWith("/payments");
+    pathname.startsWith("/payments") ||
+    isAdminOnlyRoute;
 
   // CSV export is admin/staff only — block customers explicitly
   const isExportRoute = pathname.startsWith("/api/reports/export");

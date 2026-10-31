@@ -71,9 +71,9 @@ export async function getDashboardKpis(
 
     return {
       totalRevenue: totalRevenue || 4892500,
-      activeSubscriptions: activeSubscriptions || 1284,
+      activeSubscriptions: activeSubscriptions,
       outstandingPayments: outstandingPayments || 641200,
-      overdueInvoices: overdueCount || 37,
+      overdueInvoices: overdueCount,
       collectionRate: Number(collectionRate.toFixed(1)),
       mrr: 4077000,
       arr: 48924000,

@@ -35,14 +35,6 @@ export async function getMySubscriptions(
   if (shouldUseMockData()) {
     const store = getMockStore();
     const subs = store.subscriptions.filter((s) => s.customerId === customerId);
-    // Demo fallback: assign first 3 subscriptions to this customer if no direct match
-    if (subs.length === 0) {
-      return store.subscriptions.slice(0, 3).map((s) => ({
-        ...s,
-        customerId,
-        customer: store.customers[0],
-      }));
-    }
     return subs;
   }
 

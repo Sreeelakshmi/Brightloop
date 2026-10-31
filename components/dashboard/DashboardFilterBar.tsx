@@ -3,7 +3,30 @@
 import * as React from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { FilterBar, FilterState } from "@/components/ui-shared";
-import { getMockStore } from "@/lib/data/mock-generator";
+
+const DEFAULT_CUSTOMER_OPTIONS = [
+  "All Customers",
+  "Tata Consultancy Services",
+  "Infosys Ltd",
+  "Wipro Enterprises",
+  "Reliance Industries",
+  "HCL Technologies",
+  "Mahindra & Mahindra",
+  "Larsen & Toubro",
+  "Bharti Airtel",
+  "Sun Pharma",
+  "ITC Infotech",
+];
+
+const DEFAULT_PLAN_OPTIONS = [
+  "All Plans",
+  "Daily Essential",
+  "Weekly Growth",
+  "Standard Monthly",
+  "Monthly Business Pro",
+  "Annual Enterprise",
+  "Enterprise Plus Annual",
+];
 
 /** Active filter chip that can be removed */
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
@@ -64,22 +87,11 @@ export function DashboardFilterBar() {
   const searchParams = useSearchParams();
   const filters = readFiltersFromUrl(searchParams);
 
-  // Build option lists from mock store names (unique companies / plan names)
   const store = React.useMemo(() => {
-    try {
-      const s = getMockStore();
-      const customers = [
-        "All Customers",
-        ...Array.from(new Set(s.subscriptions.slice(0, 50).map((sub) => sub.customer?.company ?? ""))).filter(Boolean).slice(0, 15),
-      ];
-      const plans = [
-        "All Plans",
-        ...Array.from(new Set(s.subscriptions.map((sub) => sub.plan?.name ?? ""))).filter(Boolean),
-      ];
-      return { customers, plans };
-    } catch {
-      return { customers: ["All Customers"], plans: ["All Plans"] };
-    }
+    return {
+      customers: DEFAULT_CUSTOMER_OPTIONS,
+      plans: DEFAULT_PLAN_OPTIONS,
+    };
   }, []);
 
   const pushFilters = (f: FilterState) => {
@@ -144,4 +156,3 @@ export function DashboardFilterBar() {
     </div>
   );
 }
-
