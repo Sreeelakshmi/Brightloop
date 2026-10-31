@@ -12,7 +12,9 @@ export function middleware(request: NextRequest) {
     roleCookie && ["admin", "staff", "customer"].includes(roleCookie)
   );
 
-  const isAdminRoute =
+  const isAdminOnlyRoute = pathname.startsWith("/staff");
+
+  const isStaffOrAdminRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/reports") ||
     pathname.startsWith("/customers") ||
@@ -29,7 +31,7 @@ export function middleware(request: NextRequest) {
 
   // 1. Unauthenticated users
   if (!isAuthenticated) {
-    if (isAdminRoute || isPortalRoute || isRootRoute || isExportRoute) {
+    if (isAdminOnlyRoute || isStaffOrAdminRoute || isPortalRoute || isRootRoute || isExportRoute) {
       const loginUrl = new URL("/login", request.url);
       if (!isRootRoute) {
         loginUrl.searchParams.set("redirect", pathname);
@@ -48,12 +50,21 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(targetUrl);
   }
 
-  // 3. Customer trying to access Admin/Staff routes
-  if (roleCookie === "customer" && isAdminRoute) {
+  // 3. Admin-only pages (e.g. /staff): Staff and Customers cannot access
+  if (isAdminOnlyRoute && roleCookie !== "admin") {
+    const fallbackUrl =
+      roleCookie === "customer"
+        ? new URL("/portal", request.url)
+        : new URL("/dashboard", request.url);
+    return NextResponse.redirect(fallbackUrl);
+  }
+
+  // 4. Customer trying to access Admin/Staff routes
+  if (roleCookie === "customer" && isStaffOrAdminRoute) {
     return NextResponse.redirect(new URL("/portal", request.url));
   }
 
-  // 4. Customer trying to access the CSV export API route
+  // 5. Customer trying to access the CSV export API route
   if (roleCookie === "customer" && isExportRoute) {
     return NextResponse.json(
       { error: "Forbidden: insufficient role" },
@@ -61,7 +72,7 @@ export function middleware(request: NextRequest) {
     );
   }
 
-  // 5. Admin or Staff trying to access Customer Portal routes
+  // 6. Admin or Staff trying to access Customer Portal routes
   if ((roleCookie === "admin" || roleCookie === "staff") && isPortalRoute) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
@@ -78,6 +89,7 @@ export const config = {
     "/subscriptions/:path*",
     "/invoices/:path*",
     "/payments/:path*",
+    "/staff/:path*",
     "/portal/:path*",
     "/login",
     "/api/reports/export",

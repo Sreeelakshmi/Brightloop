@@ -1,15 +1,10 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getMockDb } from "./mock/db";
 
 /**
  * ============================================================================
- * TODO: Member 1 / Auth Lead
- * Wire this contract to the official Supabase Auth session and app_metadata.
- *
- * Current implementation provides:
- * 1. Strongly typed role definitions (admin | staff | customer).
- * 2. Cookie-based session extraction compatible with Next.js App Router & middleware.
- * 3. Server-side role assertion guards (requireRole) for Page/Layout level security.
+ * Auth Session & Identity Layer
  * ============================================================================
  */
 
@@ -25,22 +20,23 @@ export interface AuthUser {
 }
 
 export const AUTH_COOKIE_NAME = "brightloop_role";
+export const USER_ID_COOKIE = "brightloop_user_id";
 
 const DEFAULT_USERS: Record<UserRole, AuthUser> = {
   admin: {
-    id: "user-admin-01",
+    id: "usr-admin-01",
     email: "admin@brightloop.io",
     name: "Alex V.",
     role: "admin",
   },
   staff: {
-    id: "user-staff-01",
+    id: "usr-staff-01",
     email: "operations@brightloop.io",
     name: "Elena R.",
     role: "staff",
   },
   customer: {
-    id: "user-cust-01",
+    id: "usr-cust-01",
     email: "billing@aerogroup.com",
     name: "AeroGroup Billing",
     role: "customer",
@@ -50,17 +46,41 @@ const DEFAULT_USERS: Record<UserRole, AuthUser> = {
 
 /**
  * Server-side helper to read the current authenticated user from cookies.
- * In production, Member 1 should inspect the Supabase Auth session JWT / user_metadata.
+ * In mock mode: checks mock database for user matching brightloop_user_id cookie,
+ * or falls back to DEFAULT_USERS for role cookie.
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const cookieStore = cookies();
-  const roleCookie = cookieStore.get(AUTH_COOKIE_NAME)?.value as UserRole | undefined;
+  try {
+    const cookieStore = cookies();
+    const roleCookie = cookieStore.get(AUTH_COOKIE_NAME)?.value as UserRole | undefined;
+    const userIdCookie = cookieStore.get(USER_ID_COOKIE)?.value;
 
-  if (!roleCookie || !DEFAULT_USERS[roleCookie]) {
+    if (!roleCookie || !["admin", "staff", "customer"].includes(roleCookie)) {
+      return null;
+    }
+
+    if (userIdCookie) {
+      try {
+        const db = getMockDb();
+        const found = db.users.find((u) => u.id === userIdCookie && u.status === "active");
+        if (found) {
+          return {
+            id: found.id,
+            email: found.email,
+            name: found.name,
+            role: found.role,
+            customerId: found.customerId,
+          };
+        }
+      } catch (err) {
+        // Fallback to role-based default
+      }
+    }
+
+    return DEFAULT_USERS[roleCookie] || null;
+  } catch {
     return null;
   }
-
-  return DEFAULT_USERS[roleCookie];
 }
 
 /**
@@ -88,4 +108,3 @@ export async function requireAuth(allowedRoles?: UserRole[]): Promise<AuthUser> 
 
   return user;
 }
-

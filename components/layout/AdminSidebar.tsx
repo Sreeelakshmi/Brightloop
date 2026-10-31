@@ -58,6 +58,12 @@ const navItems: NavItem[] = [
     href: "/payments",
     icon: CreditCard,
   },
+  {
+    title: "Staff",
+    href: "/staff",
+    icon: Shield,
+    adminOnly: true,
+  },
 ];
 
 export interface AdminSidebarProps {
@@ -239,4 +245,3 @@ export function AdminSidebar({
     </>
   );
 }
-
