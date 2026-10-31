@@ -6,23 +6,56 @@
  * stay in sync with server-side validation.
  */
 
-import type { BillingPeriod, Subscription, SubscriptionLine } from "@/lib/validations/subscription";
+import type {
+  BillingPeriod,
+  Subscription as BaseSubscription,
+  SubscriptionLine as BaseSubscriptionLine,
+  Plan as BasePlan,
+  SubscriptionStatus,
+} from "@/lib/validations/subscription";
 
 export type {
   BillingPeriod,
   PaymentTerms,
-  Plan,
   Product,
   ProductType,
   ProductVariant,
   QuotationTemplate,
-  Subscription,
   SubscriptionCreate,
-  SubscriptionLine,
   SubscriptionStatus,
 } from "@/lib/validations/subscription";
 
-export interface BillableSubscriptionLine extends SubscriptionLine {
+export type Plan = BasePlan & {
+  id?: string;
+  code?: string;
+  billingCycle?: any;
+  amount?: number;
+  currency?: string;
+  description?: string;
+  active?: boolean;
+};
+
+export type SubscriptionLine = BaseSubscriptionLine & {
+  id?: string;
+  subscriptionId?: string;
+  description?: string;
+};
+
+export type Subscription = BaseSubscription & {
+  id?: string;
+  subscriptionNumber?: string;
+  number?: string;
+  endDate?: string;
+  renewalDate?: string;
+  totalAmount?: number;
+  currency?: string;
+  customer?: any;
+  plan?: any;
+  lines?: SubscriptionLine[];
+  createdAt?: string;
+};
+
+export interface BillableSubscriptionLine extends BaseSubscriptionLine {
   id?: string;
   lineId?: string;
   productName?: string;
@@ -30,12 +63,8 @@ export interface BillableSubscriptionLine extends SubscriptionLine {
 
 /**
  * Subscription as consumed by the recurring billing engine.
- *
- * Only a contract that has been activated is billable, so `status` is narrowed
- * to `"active"` and `nextBillingDate` is guaranteed to be present. The totals
- * are the aggregates the engine invoices for the current cycle.
  */
-export interface BillableSubscription extends Subscription {
+export interface BillableSubscription extends BaseSubscription {
   id: string;
   subscriptionId?: string;
   status: "active";

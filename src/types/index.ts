@@ -17,7 +17,11 @@ export type InvoiceStatus =
   | "open"
   | "paid"
   | "uncollectible"
-  | "void";
+  | "void"
+  | "overdue"
+  | "confirmed"
+  | "cancelled"
+  | "closed";
 
 export type QuotationStatus =
   | "draft"
@@ -61,6 +65,9 @@ export interface Customer {
   email: string;
   name?: string | null;
   phone?: string | null;
+  company?: string;
+  address?: string;
+  taxId?: string;
   createdAt: string;
 }
 
@@ -108,36 +115,54 @@ export interface QuotationItem {
 
 export interface Invoice {
   id: string;
-  invoiceNumber: string;
+  invoiceNumber?: string;
+  invoiceNo?: string;
   customerId: string;
+  customer?: any;
+  customerName?: string;
+  customerEmail?: string;
   subscriptionId?: string | null;
   billingPeriodStart?: string | null;
   billingPeriodEnd?: string | null;
+  issueDate?: string;
+  dueDate: string;
+  daysOverdue?: number;
   status: InvoiceStatus;
+  extendedStatus?: any;
   currency: string;
   subtotal?: number;
   taxAmount?: number;
   discountAmount?: number;
-  amountDue: number;
-  amountPaid: number;
-  dueDate: string;
+  totalAmount?: number;
+  balance?: number;
+  amountDue?: number;
+  amountPaid?: number;
   paidAt?: string | null;
   voidedAt?: string | null;
   pdfUrl?: string | null;
+  notes?: string;
   createdAt: string;
   updatedAt?: string;
   items?: any[];
+  lines?: any[];
+  payments?: any[];
 }
 
 export interface Payment {
   id: string;
+  paymentNo?: string;
   invoiceId: string;
+  invoiceNo?: string;
   customerId: string;
+  customer?: any;
   transactionReference?: string | null;
+  reference?: string;
   paymentMethod: string;
+  method?: any;
   amount: number;
   currency: string;
   status: PaymentStatus;
+  paymentDate?: string;
   errorMessage?: string | null;
   metadata?: Record<string, unknown>;
   createdAt: string;
@@ -149,3 +174,6 @@ export * from "./subscription";
 
 /* Billing domain: invoices, taxes, discounts, payments, financial math. */
 export * from "./billing";
+
+/* Telemetry, Dashboard, and Portal domain. */
+export * from "./telemetry";

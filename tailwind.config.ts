@@ -3,29 +3,48 @@ import type { Config } from "tailwindcss";
 const config: Config = {
   darkMode: ["class"],
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
-        // Brightloop official design system tokens from reference image
+        // Unified Brightloop Design Palette
+        brand: {
+          bg: "#E4ECE1", // Pale sage page background
+          card: "#FFFFFF", // Crisp card surface
+          border: "#D5DDD2", // 1px card/divider border
+          ink: "#1F2622", // Primary dark charcoal (headings, primary buttons)
+          sage: "#8C9B8E", // Muted sage (table headers, secondary fills)
+          orange: "#F27B4B", // Attention coral orange (overdue, paused, destructive)
+        },
+        // Compatibility aliases for Member 1 & Member 4 components
         brightloop: {
-          bg: "#DCE9DF", // Primary page background (soft sage)
-          card: "#FFFFFF", // Surface / card white
-          text: "#202923", // Primary dark text
-          sage: "#8F9F94", // Secondary sage text & KPI header
+          bg: "#E4ECE1",
+          card: "#FFFFFF",
+          text: "#1F2622",
+          sage: "#8C9B8E",
           "sage-dark": "#75847A",
-          coral: "#FA8257", // Accent coral for active states, CTA & highlights
+          coral: "#F27B4B",
           "coral-hover": "#E87146",
           "coral-light": "#FDECE6",
           "coral-tint": "#FFF1EC",
-          border: "#D4DED6", // Thin sage border
-          muted: "#8F9F94",
-          dark: "#202923", // Dark card header & dark button
+          border: "#D5DDD2",
+          muted: "#8C9B8E",
+          dark: "#1F2622",
         },
-        // Semantic shadcn tokens mapped to HSL CSS variables
+        telemetry: {
+          bg: "#E4ECE1",
+          card: "#FFFFFF",
+          border: "#D5DDD2",
+          panel: "#DDE5DB",
+          charcoal: "#1F2622",
+          secondary: "#8C9B8E",
+          orange: "#F27B4B",
+        },
+        // Semantic shadcn tokens mapped to CSS variables
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -61,18 +80,19 @@ const config: Config = {
         ring: "hsl(var(--ring))",
       },
       borderRadius: {
-        lg: "var(--radius)", // 8px
-        md: "calc(var(--radius) - 2px)", // 6px
-        sm: "calc(var(--radius) - 4px)", // 4px
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+        xl: "0.75rem",
       },
       boxShadow: {
-        subtle: "0 1px 2px 0 rgba(32, 41, 35, 0.04)",
-        card: "0 1px 3px 0 rgba(32, 41, 35, 0.05), 0 1px 2px -1px rgba(32, 41, 35, 0.03)",
-        hover: "0 4px 6px -1px rgba(32, 41, 35, 0.07), 0 2px 4px -2px rgba(32, 41, 35, 0.05)",
+        subtle: "0 1px 2px 0 rgba(31, 38, 34, 0.04)",
+        card: "0 1px 3px 0 rgba(31, 38, 34, 0.05), 0 1px 2px -1px rgba(31, 38, 34, 0.03)",
+        hover: "0 4px 6px -1px rgba(31, 38, 34, 0.07), 0 2px 4px -2px rgba(31, 38, 34, 0.05)",
       },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 };
 
 export default config;

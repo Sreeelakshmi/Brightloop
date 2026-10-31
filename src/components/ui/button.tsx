@@ -11,6 +11,8 @@ const buttonVariants = cva(
           "bg-primary text-primary-foreground shadow-sm hover:bg-brightloop-coral-hover active:scale-[0.99]",
         coral:
           "bg-brightloop-coral text-white shadow-sm hover:bg-brightloop-coral-hover active:scale-[0.99]",
+        orange:
+          "bg-[#F27B4B] text-white shadow-sm hover:bg-[#E56F3E] active:scale-[0.99]",
         dark:
           "bg-brightloop-text text-white shadow-sm hover:bg-brightloop-text/90 active:scale-[0.99]",
         destructive:
