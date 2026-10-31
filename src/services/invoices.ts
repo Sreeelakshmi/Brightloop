@@ -861,6 +861,13 @@ export async function getInvoices(filters?: InvoiceFilters): Promise<DetailedInv
     );
   }
 
+  // Sort newest first by issueDate
+  results.sort(
+    (a, b) =>
+      new Date(b.issueDate || b.createdAt).getTime() -
+      new Date(a.issueDate || a.createdAt).getTime()
+  );
+
   return results.map((inv) => {
     const resolvedExtended = resolveInvoiceStatus(inv.extendedStatus, inv.dueDate, inv.amountDuePaise);
     return {
@@ -1046,7 +1053,8 @@ export async function updateInvoiceStatus(
 
 export async function applyPaymentToInvoice(
   invoiceId: string,
-  paymentPaise: number
+  paymentPaise: number,
+  paymentRecord?: any
 ): Promise<DetailedInvoice> {
   const inv = invoicesStore.find((i) => i.id === invoiceId);
   if (!inv) {
@@ -1069,6 +1077,11 @@ export async function applyPaymentToInvoice(
   if (inv.amountDuePaise === 0) {
     inv.extendedStatus = "paid";
     inv.status = "paid";
+  }
+
+  if (paymentRecord) {
+    if (!inv.payments) inv.payments = [];
+    inv.payments.unshift(paymentRecord);
   }
 
   return { ...inv };
@@ -1117,6 +1130,15 @@ export async function getBillingAnalyticsSummary(): Promise<BillingAnalyticsSumm
       ? Number(((totalCollectedPaise / totalRevenuePaise) * 100).toFixed(1))
       : 0;
 
+  let recentPayments: any[] = [];
+  try {
+    const { getPayments } = await import("./payments");
+    const paymentsList = await getPayments();
+    recentPayments = paymentsList.slice(0, 10);
+  } catch {
+    recentPayments = [];
+  }
+
   return {
     totalRevenuePaise,
     totalCollectedPaise,
@@ -1127,6 +1149,6 @@ export async function getBillingAnalyticsSummary(): Promise<BillingAnalyticsSumm
     draftInvoicesCount,
     cancelledInvoicesCount,
     collectionRatePercent,
-    recentPayments: [],
+    recentPayments,
   };
 }

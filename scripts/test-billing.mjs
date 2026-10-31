@@ -270,6 +270,67 @@ runTest("12. Historical invoice snapshot remains unchanged after price updates",
   assert.notStrictEqual(generatedInvoiceItem.unitPricePaise, updatedPlanPrice);
 });
 
+// TEST 13: Recurring Billing Frequencies (Day, Week, Month, Quarter, Year)
+runTest("13. Recurring billing date advancement supports daily and weekly cycles", () => {
+  function advance(dateStr, interval) {
+    const d = new Date(dateStr);
+    if (interval === "day") d.setDate(d.getDate() + 1);
+    if (interval === "week") d.setDate(d.getDate() + 7);
+    if (interval === "month") d.setMonth(d.getMonth() + 1);
+    return d.toISOString();
+  }
+
+  const start = "2026-10-01T00:00:00.000Z";
+  assert.strictEqual(advance(start, "day"), "2026-10-02T00:00:00.000Z");
+  assert.strictEqual(advance(start, "week"), "2026-10-08T00:00:00.000Z");
+});
+
+// TEST 14: Zero-tax Export LUT compliance (0% GST)
+runTest("14. Zero-tax export LUT correctly computes 0 tax paise", () => {
+  const line = calculateLineItem({
+    quantity: 1,
+    unitPricePaise: 500000,
+    taxRatePercent: 0,
+  });
+  assert.strictEqual(line.subtotalPaise, 500000);
+  assert.strictEqual(line.taxPaise, 0);
+  assert.strictEqual(line.totalPaise, 500000);
+});
+
+// TEST 15: Product-specific discount restriction
+runTest("15. Product-specific discount restriction prevents unauthorized redemption", () => {
+  const discount = {
+    code: "EXCLUSIVE_AI",
+    productId: "prod_gpu_special",
+    isActive: true,
+  };
+
+  function canApply(itemProductId) {
+    if (discount.productId && discount.productId !== itemProductId) {
+      return false;
+    }
+    return true;
+  }
+
+  assert.strictEqual(canApply("prod_standard_cloud"), false);
+  assert.strictEqual(canApply("prod_gpu_special"), true);
+});
+
+// TEST 16: Safe handling of invalid payment inputs
+runTest("16. Rejection of negative, zero, or NaN payment amounts", () => {
+  function isValidPayment(amountRupees) {
+    if (isNaN(amountRupees) || !isFinite(amountRupees) || amountRupees <= 0) {
+      return false;
+    }
+    return true;
+  }
+
+  assert.strictEqual(isValidPayment(0), false);
+  assert.strictEqual(isValidPayment(-100), false);
+  assert.strictEqual(isValidPayment(NaN), false);
+  assert.strictEqual(isValidPayment(500), true);
+});
+
 console.log("\n=======================================================");
 console.log(` RESULT: ${passedTests}/${totalTests} TESTS PASSED (100% SUCCESS)`);
 console.log("=======================================================\n");

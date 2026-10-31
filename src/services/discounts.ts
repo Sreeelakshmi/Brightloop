@@ -82,11 +82,13 @@ export interface DiscountValidationResult {
 
 /**
  * Validates discount eligibility against purchase constraints and calculates discount in paise.
+ * Supports product-specific, subscription-specific, expiry, and quantity rules.
  */
 export function evaluateDiscountEligibility(
   discount: Discount,
   subtotalPaise: number,
-  quantity: number = 1
+  quantity: number = 1,
+  options?: { productId?: string; subscriptionId?: string }
 ): DiscountValidationResult {
   const now = new Date();
 
@@ -101,6 +103,24 @@ export function evaluateDiscountEligibility(
   }
   if (discount.endDate && new Date(discount.endDate) < now) {
     return { valid: false, reason: "Discount code has expired.", discountPaise: 0 };
+  }
+
+  // Product-specific check
+  if (discount.productId && options?.productId && discount.productId !== options.productId) {
+    return {
+      valid: false,
+      reason: "Discount code is not valid for this specific product tier.",
+      discountPaise: 0,
+    };
+  }
+
+  // Subscription-specific check
+  if (discount.subscriptionId && options?.subscriptionId && discount.subscriptionId !== options.subscriptionId) {
+    return {
+      valid: false,
+      reason: "Discount code is restricted to a different subscription account.",
+      discountPaise: 0,
+    };
   }
 
   // Usage limit
@@ -183,4 +203,3 @@ export async function incrementDiscountUsage(code: string): Promise<void> {
     discountsStore[index].updatedAt = new Date().toISOString();
   }
 }
-

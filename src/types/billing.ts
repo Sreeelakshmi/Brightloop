@@ -21,6 +21,8 @@ export type PaymentMethodType =
   | "cash"
   | "manual";
 
+export type BillingFrequency = "day" | "week" | "month" | "quarter" | "year";
+
 export interface TaxRule {
   id: string;
   name: string;
@@ -106,7 +108,7 @@ export interface SubscriptionBillingContract {
   planName: string;
   quantity: number;
   unitPricePaise: number;
-  billingInterval: BillingInterval;
+  billingInterval: BillingInterval | BillingFrequency;
   currentPeriodStart: string;
   currentPeriodEnd: string;
   nextBillingDate: string;
@@ -128,3 +130,18 @@ export interface BillingAnalyticsSummary {
   recentPayments: DetailedPayment[];
 }
 
+export interface CreateManualInvoiceInput {
+  customerName: string;
+  customerEmail: string;
+  customerId?: string;
+  dueDate: string;
+  notes?: string;
+  items: {
+    description: string;
+    quantity: number;
+    unitPriceRupees: number;
+    taxRatePercent?: number;
+    discountCode?: string;
+    productId?: string;
+  }[];
+}

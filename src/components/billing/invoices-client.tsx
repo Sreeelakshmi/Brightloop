@@ -6,6 +6,7 @@ import { DetailedInvoice, ExtendedInvoiceStatus } from "@/types";
 import { formatINR } from "@/lib/billing/math";
 import { InvoiceStatusBadge } from "./status-badge";
 import { RecordPaymentModal } from "./record-payment-modal";
+import { CreateInvoiceModal } from "./create-invoice-modal";
 import { runRecurringBillingAction } from "@/app/actions/billing";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ export function InvoicesClient({ initialInvoices }: InvoicesClientProps) {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [activePaymentInvoice, setActivePaymentInvoice] = useState<DetailedInvoice | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
 
   const [isPending, startTransition] = useTransition();
   const [billingResultMsg, setBillingResultMsg] = useState<{
@@ -121,18 +123,26 @@ export function InvoicesClient({ initialInvoices }: InvoicesClientProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs sm:text-sm bg-primary text-primary-foreground shadow-sm"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Create Invoice
+          </Button>
+
           <Button
             onClick={handleRunRecurringBilling}
             disabled={isPending}
             variant="outline"
-            className="border-primary/20 hover:bg-primary/5 text-primary flex items-center gap-2"
+            className="border-primary/20 hover:bg-primary/5 text-primary flex items-center gap-2 text-xs sm:text-sm"
           >
             <RotateCw className={`w-4 h-4 ${isPending ? "animate-spin text-primary" : ""}`} />
             <span>{isPending ? "Running Engine..." : "Run Recurring Billing"}</span>
           </Button>
 
-          <Link href="/settings">
+          <Link href="/settings/billing">
             <Button variant="secondary" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <FileText className="w-4 h-4" />
               Tax & Discounts
@@ -399,6 +409,15 @@ export function InvoicesClient({ initialInvoices }: InvoicesClientProps) {
           invoice={activePaymentInvoice}
           isOpen={true}
           onClose={() => setActivePaymentInvoice(null)}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
+
+      {/* Manual Invoice Creation Modal */}
+      {isCreateModalOpen && (
+        <CreateInvoiceModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
           onSuccess={handlePaymentSuccess}
         />
       )}

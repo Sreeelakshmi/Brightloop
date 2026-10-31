@@ -52,3 +52,25 @@ export const triggerRecurringBillingSchema = z.object({
 });
 
 export type TriggerRecurringBillingInput = z.infer<typeof triggerRecurringBillingSchema>;
+
+export const createManualInvoiceSchema = z.object({
+  customerName: z.string().min(2, "Customer name must be at least 2 characters"),
+  customerEmail: z.string().email("Please provide a valid email address"),
+  customerId: z.string().optional(),
+  dueDate: z.string().min(1, "Due date is required"),
+  notes: z.string().optional(),
+  items: z
+    .array(
+      z.object({
+        description: z.string().min(2, "Item description is required"),
+        quantity: z.number().int().positive("Quantity must be at least 1"),
+        unitPriceRupees: z.number().positive("Unit price must be greater than zero"),
+        taxRatePercent: z.number().min(0).max(100).optional().default(18),
+        discountCode: z.string().optional(),
+        productId: z.string().optional(),
+      })
+    )
+    .min(1, "At least one line item is required"),
+});
+
+export type CreateManualInvoiceSchemaInput = z.infer<typeof createManualInvoiceSchema>;

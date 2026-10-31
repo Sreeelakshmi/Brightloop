@@ -1,4 +1,4 @@
-import { SubscriptionBillingContract, DetailedInvoice } from "@/types";
+import { SubscriptionBillingContract, DetailedInvoice, BillingFrequency, BillingInterval } from "@/types";
 import { createInvoice } from "./invoices";
 
 // Active subscriptions store (integrating Member 2 contract)
@@ -15,7 +15,7 @@ let activeSubscriptionsStore: SubscriptionBillingContract[] = [
     billingInterval: "month",
     currentPeriodStart: "2026-10-01T00:00:00Z",
     currentPeriodEnd: "2026-10-31T23:59:59Z",
-    nextBillingDate: "2026-10-31T00:00:00Z", // Due for recurring run!
+    nextBillingDate: "2026-10-31T00:00:00Z", // Due for recurring run
     status: "active",
     taxRuleCode: "GST_18",
   },
@@ -31,7 +31,7 @@ let activeSubscriptionsStore: SubscriptionBillingContract[] = [
     billingInterval: "month",
     currentPeriodStart: "2026-10-02T00:00:00Z",
     currentPeriodEnd: "2026-11-01T23:59:59Z",
-    nextBillingDate: "2026-11-01T00:00:00Z", // Due on 1st Nov
+    nextBillingDate: "2026-11-01T00:00:00Z",
     status: "active",
     taxRuleCode: "GST_18",
     discountCode: "WELCOME20",
@@ -48,7 +48,39 @@ let activeSubscriptionsStore: SubscriptionBillingContract[] = [
     billingInterval: "month",
     currentPeriodStart: "2026-10-25T00:00:00Z",
     currentPeriodEnd: "2026-11-24T23:59:59Z",
-    nextBillingDate: "2026-11-25T00:00:00Z", // Future
+    nextBillingDate: "2026-11-25T00:00:00Z",
+    status: "active",
+    taxRuleCode: "GST_18",
+  },
+  {
+    subscriptionId: "sub-odoo-004",
+    customerId: "a0000000-0000-4000-8000-000000000003",
+    customerName: "Kite Fintech Labs",
+    customerEmail: "accounts@kitefintech.com",
+    planId: "plan-api-metered-weekly",
+    planName: "High-Frequency FinTech Gateway",
+    quantity: 1,
+    unitPricePaise: 150000,
+    billingInterval: "week",
+    currentPeriodStart: "2026-10-24T00:00:00Z",
+    currentPeriodEnd: "2026-10-30T23:59:59Z",
+    nextBillingDate: "2026-10-31T00:00:00Z", // Due for recurring run
+    status: "active",
+    taxRuleCode: "GST_18",
+  },
+  {
+    subscriptionId: "sub-odoo-005",
+    customerId: "a0000000-0000-4000-8000-000000000004",
+    customerName: "CloudScale Systems",
+    customerEmail: "ops@cloudscale.net",
+    planId: "plan-dev-sandbox-daily",
+    planName: "On-Demand Cloud Sandbox",
+    quantity: 1,
+    unitPricePaise: 25000,
+    billingInterval: "day",
+    currentPeriodStart: "2026-10-30T00:00:00Z",
+    currentPeriodEnd: "2026-10-30T23:59:59Z",
+    nextBillingDate: "2026-10-31T00:00:00Z", // Due for recurring run
     status: "active",
     taxRuleCode: "GST_18",
   },
@@ -56,24 +88,46 @@ let activeSubscriptionsStore: SubscriptionBillingContract[] = [
 
 /**
  * Calculates next date advancing by interval safely
+ * Supports daily, weekly, monthly, quarterly, and yearly frequencies
  */
 export function advanceBillingDate(
   currentDateStr: string,
-  interval: "month" | "quarter" | "year"
+  interval: BillingInterval | BillingFrequency | string
 ): { nextBillingDate: string; nextPeriodEnd: string } {
   const current = new Date(currentDateStr);
   const nextStart = new Date(current);
   const nextEnd = new Date(current);
 
-  if (interval === "month") {
-    nextStart.setMonth(nextStart.getMonth() + 1);
-    nextEnd.setMonth(nextEnd.getMonth() + 2);
-  } else if (interval === "quarter") {
-    nextStart.setMonth(nextStart.getMonth() + 3);
-    nextEnd.setMonth(nextEnd.getMonth() + 6);
-  } else if (interval === "year") {
-    nextStart.setFullYear(nextStart.getFullYear() + 1);
-    nextEnd.setFullYear(nextEnd.getFullYear() + 2);
+  const freq = interval.toLowerCase();
+
+  switch (freq) {
+    case "day":
+    case "daily":
+      nextStart.setDate(nextStart.getDate() + 1);
+      nextEnd.setDate(nextEnd.getDate() + 2);
+      break;
+    case "week":
+    case "weekly":
+      nextStart.setDate(nextStart.getDate() + 7);
+      nextEnd.setDate(nextEnd.getDate() + 14);
+      break;
+    case "quarter":
+    case "quarterly":
+      nextStart.setMonth(nextStart.getMonth() + 3);
+      nextEnd.setMonth(nextEnd.getMonth() + 6);
+      break;
+    case "year":
+    case "yearly":
+    case "annual":
+      nextStart.setFullYear(nextStart.getFullYear() + 1);
+      nextEnd.setFullYear(nextEnd.getFullYear() + 2);
+      break;
+    case "month":
+    case "monthly":
+    default:
+      nextStart.setMonth(nextStart.getMonth() + 1);
+      nextEnd.setMonth(nextEnd.getMonth() + 2);
+      break;
   }
 
   nextEnd.setSeconds(nextEnd.getSeconds() - 1);
@@ -144,10 +198,10 @@ export async function runRecurringBilling(options?: {
         dueDate: dueDateObj.toISOString(),
         periodStart,
         periodEnd,
-        notes: `Recurring billing for ${sub.planName} (${sub.billingInterval}ly)`,
+        notes: `Automated recurring billing for ${sub.planName} (${sub.billingInterval} cycle)`,
         items: [
           {
-            description: `${sub.planName} (${sub.billingInterval}ly cycle)`,
+            description: `${sub.planName} (${sub.billingInterval} cycle)`,
             quantity: sub.quantity,
             unitPricePaise: sub.unitPricePaise,
             taxRatePercent: 18,
@@ -165,6 +219,12 @@ export async function runRecurringBilling(options?: {
     } catch (err: any) {
       if (err.message && err.message.includes("already exists")) {
         result.skippedDuplicateCount++;
+        // Sync date so subscription doesn't remain perpetually stuck on already-billed period
+        const { nextBillingDate: advancedDate } = advanceBillingDate(
+          sub.nextBillingDate,
+          sub.billingInterval
+        );
+        sub.nextBillingDate = advancedDate;
       } else {
         result.errors.push({
           subscriptionId: sub.subscriptionId,
@@ -180,4 +240,3 @@ export async function runRecurringBilling(options?: {
 export async function getActiveSubscriptions(): Promise<SubscriptionBillingContract[]> {
   return [...activeSubscriptionsStore];
 }
-

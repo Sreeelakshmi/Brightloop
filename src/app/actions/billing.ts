@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { recordPayment } from "@/services/payments";
-import { updateInvoiceStatus } from "@/services/invoices";
+import { updateInvoiceStatus, createInvoice } from "@/services/invoices";
 import { createTaxRule } from "@/services/taxes";
 import { createDiscount } from "@/services/discounts";
 import { runRecurringBilling } from "@/services/recurring";
@@ -10,11 +10,14 @@ import {
   recordPaymentSchema,
   createTaxRuleSchema,
   createDiscountSchema,
+  createManualInvoiceSchema,
   RecordPaymentInput,
   CreateTaxRuleInput,
   CreateDiscountInput,
+  CreateManualInvoiceSchemaInput,
 } from "@/lib/validations/billing";
 import { ExtendedInvoiceStatus } from "@/types";
+import { rupeesToPaise } from "@/lib/billing/math";
 
 export async function recordPaymentAction(formData: RecordPaymentInput) {
   try {
@@ -79,3 +82,31 @@ export async function createDiscountAction(input: CreateDiscountInput) {
   }
 }
 
+export async function createManualInvoiceAction(input: CreateManualInvoiceSchemaInput) {
+  try {
+    const validated = createManualInvoiceSchema.parse(input);
+    const newInvoice = await createInvoice({
+      customerId: validated.customerId || crypto.randomUUID(),
+      customerName: validated.customerName,
+      customerEmail: validated.customerEmail,
+      dueDate: validated.dueDate,
+      notes: validated.notes,
+      status: "confirmed",
+      items: validated.items.map((it) => ({
+        description: it.description,
+        quantity: it.quantity,
+        unitPricePaise: rupeesToPaise(it.unitPriceRupees),
+        taxRatePercent: it.taxRatePercent ?? 18,
+        discountCode: it.discountCode,
+        productId: it.productId,
+      })),
+    });
+
+    revalidatePath("/invoices");
+    revalidatePath("/payments");
+    revalidatePath("/dashboard");
+    return { success: true, data: newInvoice };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to create invoice" };
+  }
+}

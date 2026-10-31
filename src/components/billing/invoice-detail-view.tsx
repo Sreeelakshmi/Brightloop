@@ -55,6 +55,19 @@ export function InvoiceDetailView({ invoice, payments }: InvoiceDetailViewProps)
 
   return (
     <div className="space-y-6">
+      {/* Isolated Print Stylesheet to hide sidebars and navbars when printing */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media print {
+              aside, nav, header { display: none !important; }
+              main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+              body { background: white !important; color: black !important; }
+            }
+          `,
+        }}
+      />
+
       {/* Top action bar - Hidden when printing */}
       <div className="print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <Link

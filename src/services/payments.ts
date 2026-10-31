@@ -249,9 +249,6 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{
     );
   }
 
-  // Atomically update invoice
-  const updatedInvoice = await applyPaymentToInvoice(invoice.id, paymentPaise);
-
   const newPayment: DetailedPayment = {
     id: crypto.randomUUID(),
     invoiceId: invoice.id,
@@ -269,6 +266,9 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{
     notes: input.notes,
     createdAt: new Date().toISOString(),
   };
+
+  // Atomically update invoice
+  const updatedInvoice = await applyPaymentToInvoice(invoice.id, paymentPaise, newPayment);
 
   paymentsStore.unshift(newPayment);
 
