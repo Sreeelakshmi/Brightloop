@@ -2,19 +2,15 @@
  * Brightloop Shared TypeScript Type Definitions
  *
  * Core entities and shared domain vocabulary across hackathon team members.
+ * Subscription-domain types (Product, ProductVariant, Plan, QuotationTemplate,
+ * Subscription, SubscriptionLine) are defined in `./subscription` and
+ * re-exported here.
  */
 
 export type UserRole = "owner" | "admin" | "finance" | "support" | "customer";
 
+/** Billing cycle used by invoicing (subscription plans use `BillingPeriod`). */
 export type BillingInterval = "month" | "quarter" | "year";
-
-export type SubscriptionStatus =
-  | "trialing"
-  | "active"
-  | "past_due"
-  | "canceled"
-  | "unpaid"
-  | "paused";
 
 export type InvoiceStatus =
   | "draft"
@@ -42,25 +38,6 @@ export interface Organization {
   slug: string;
   currency: string;
   createdAt: string;
-}
-
-export interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  active: boolean;
-  metadata?: Record<string, unknown>;
-}
-
-export interface Plan {
-  id: string;
-  productId: string;
-  name: string;
-  interval: BillingInterval;
-  amount: number;
-  currency: string;
-  trialDays?: number;
-  active: boolean;
 }
 
 export interface Customer {
@@ -92,17 +69,6 @@ export interface Quotation {
   createdAt: string;
 }
 
-export interface Subscription {
-  id: string;
-  customerId: string;
-  planId: string;
-  status: SubscriptionStatus;
-  currentPeriodStart: string;
-  currentPeriodEnd: string;
-  cancelAtPeriodEnd: boolean;
-  createdAt: string;
-}
-
 export interface Invoice {
   id: string;
   subscriptionId?: string;
@@ -124,3 +90,6 @@ export interface Payment {
   paymentMethod: string;
   createdAt: string;
 }
+
+/* Subscription domain: products, variants, plans, quotations, subscriptions. */
+export * from "./subscription";
