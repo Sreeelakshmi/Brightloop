@@ -1,19 +1,49 @@
-import { PlaceholderModule } from "@/components/shared/placeholder-module";
+import { requireUser } from "@/lib/auth/require-user";
+import { listPlans } from "@/services/plans.service";
+import { PlansListClient } from "./plans-list-client";
+import type { PlanWithId } from "@/types/catalog";
+import type { UserRole } from "@/types";
 
-export default function PlansPage() {
+interface PlansPageProps {
+  searchParams?: {
+    page?: string;
+    search?: string;
+  };
+}
+
+export default async function PlansPage({ searchParams }: PlansPageProps) {
+  const page = Number(searchParams?.page) || 1;
+  const search = searchParams?.search || "";
+  const pageSize = 20;
+
+  let role: UserRole = "customer";
+  try {
+    const user = await requireUser();
+    role = user.role;
+  } catch {
+    role = "customer";
+  }
+
+  let plans: PlanWithId[] = [];
+  let total = 0;
+
+  try {
+    const result = await listPlans({ page, pageSize, search });
+    plans = result.data;
+    total = result.total;
+  } catch {
+    plans = [];
+    total = 0;
+  }
+
   return (
-    <PlaceholderModule
-      title="Pricing Plans"
-      description="Configure recurring pricing tiers, billing frequencies (monthly/annual), and trial periods."
-      assignedMember="Member 1 — Admin & Backend"
-      branch="feature/admin-backend"
-      plannedFeatures={[
-        "Tiered pricing configurations (Starter, Growth, Enterprise)",
-        "Billing frequency rules (monthly, quarterly, annual)",
-        "Free trial durations and credit card requirements",
-        "Feature matrix mapping and usage limit gates",
-        "Plan versioning and sunsetting workflows",
-      ]}
+    <PlansListClient
+      initialPlans={plans}
+      total={total}
+      currentPage={page}
+      pageSize={pageSize}
+      role={role}
+      initialSearch={search}
     />
   );
 }
