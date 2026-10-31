@@ -44,18 +44,20 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-muted/20 to-background flex flex-col">
+    <div className="min-h-screen bg-brightloop-bg flex flex-col font-sans">
       {/* Top Banner */}
-      <header className="border-b bg-card/60 backdrop-blur-sm sticky top-0 z-20">
+      <header className="border-b border-border bg-white sticky top-0 z-20 shadow-subtle">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
+            <div className="w-9 h-9 rounded-lg bg-brightloop-coral flex items-center justify-center text-white shadow-sm">
               <Repeat className="w-5 h-5" />
             </div>
             <div>
-              <span className="font-bold text-lg tracking-tight">Brightloop</span>
-              <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
-                Subscription Management System
+              <span className="font-extrabold text-lg uppercase tracking-wider text-brightloop-text">
+                Brightloop
+              </span>
+              <span className="ml-2 text-xs font-semibold uppercase tracking-wider text-brightloop-sage hidden sm:inline">
+                Subscription Control System
               </span>
             </div>
           </div>
@@ -63,13 +65,13 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 transition-colors"
+              className="text-xs font-bold uppercase tracking-wider text-brightloop-sage hover:text-brightloop-text px-3 py-1.5 transition-colors"
             >
               Sign In
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-brightloop-coral text-white px-4 py-2 rounded-md hover:bg-brightloop-coral-hover transition-colors shadow-sm"
             >
               Launch Dashboard
               <ArrowRight className="w-4 h-4" />
@@ -81,17 +83,17 @@ export default function HomePage() {
       {/* Hero Section */}
       <main className="flex-1 max-w-7xl mx-auto px-6 py-12 sm:py-16 space-y-16">
         <div className="text-center max-w-3xl mx-auto space-y-5">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-            <Code2 className="w-3.5 h-3.5" />
-            8-Hour Hackathon Architecture Skeleton
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-white text-brightloop-coral border border-border shadow-subtle">
+            <Code2 className="w-3.5 h-3.5 text-brightloop-coral" />
+            B2B SaaS Subscription Control System
           </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
+          <h1 className="text-4xl sm:text-5xl font-black uppercase tracking-tight text-brightloop-text">
             Subscription Management, <br />
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <span className="text-brightloop-coral">
               Streamlined & Scalable
             </span>
           </h1>
-          <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+          <p className="text-sm sm:text-base text-brightloop-text/80 leading-relaxed font-medium">
             Brightloop gives B2B SaaS and subscription businesses end-to-end control
             over product pricing, quotes, recurring billing, automated invoicing,
             and AI-driven revenue metrics.
@@ -100,16 +102,16 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-medium px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-colors shadow"
+              className="inline-flex items-center gap-2 bg-brightloop-coral text-white font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded-md hover:bg-brightloop-coral-hover transition-colors shadow-sm"
             >
               <Layers className="w-4 h-4" />
               Explore Admin Dashboard
             </Link>
             <Link
-              href="/portal"
-              className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground font-medium px-5 py-2.5 rounded-lg hover:bg-secondary/80 border transition-colors"
+              href="/customer"
+              className="inline-flex items-center gap-2 bg-white text-brightloop-text font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded-md hover:bg-brightloop-bg/50 border border-border transition-colors shadow-subtle"
             >
-              <Shield className="w-4 h-4" />
+              <Shield className="w-4 h-4 text-brightloop-coral" />
               Customer Portal
             </Link>
           </div>
@@ -118,8 +120,10 @@ export default function HomePage() {
         {/* Team Collaboration Architecture */}
         <div className="space-y-6">
           <div className="text-center space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight">Team Git & Module Allocation</h2>
-            <p className="text-sm text-muted-foreground">
+            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-brightloop-text">
+              Team Architecture & Modules
+            </h2>
+            <p className="text-xs font-semibold uppercase tracking-wider text-brightloop-sage">
               Modular separation of concerns for frictionless parallel development
             </p>
           </div>
@@ -130,26 +134,28 @@ export default function HomePage() {
               return (
                 <div
                   key={idx}
-                  className="rounded-xl border bg-card p-5 space-y-3 shadow-sm hover:border-primary/50 transition-colors"
+                  className="rounded-lg border border-border bg-white p-5 space-y-3 shadow-card hover:border-brightloop-coral/60 transition-all hover:shadow-hover"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <div className="w-8 h-8 rounded-md bg-brightloop-bg flex items-center justify-center text-brightloop-coral">
                       <Icon className="w-4 h-4" />
                     </div>
-                    <span className="text-xs font-semibold text-primary px-2 py-0.5 rounded bg-primary/10">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-brightloop-coral px-2 py-0.5 rounded bg-brightloop-coral-light border border-brightloop-coral/30">
                       {item.member}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="font-semibold text-base">{item.role}</h3>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono mt-1">
+                    <h3 className="font-bold text-sm uppercase tracking-wide text-brightloop-text">
+                      {item.role}
+                    </h3>
+                    <div className="flex items-center gap-1.5 text-xs text-brightloop-sage font-mono mt-1">
                       <GitBranch className="w-3.5 h-3.5 text-emerald-600" />
                       <span>{item.branch}</span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t">
+                  <p className="text-xs text-brightloop-sage leading-relaxed pt-2 border-t border-border">
                     {item.scope}
                   </p>
                 </div>
@@ -159,10 +165,19 @@ export default function HomePage() {
         </div>
 
         {/* Quick Route Directory */}
-        <div className="rounded-2xl border bg-card p-6 sm:p-8 space-y-4 shadow-sm">
-          <h2 className="text-xl font-bold tracking-tight">Module Directory Preview</h2>
+        <div className="rounded-lg border border-border bg-white p-6 sm:p-8 space-y-4 shadow-card">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-extrabold uppercase tracking-wider text-brightloop-text">
+              Module Directory Preview
+            </h2>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-brightloop-sage">
+              Direct Route Access
+            </span>
+          </div>
+
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-2">
             {[
+              { name: "Admin Console", path: "/admin" },
               { name: "Products", path: "/products" },
               { name: "Plans", path: "/plans" },
               { name: "Customers", path: "/customers" },
@@ -171,15 +186,14 @@ export default function HomePage() {
               { name: "Subscriptions", path: "/subscriptions" },
               { name: "Invoices", path: "/invoices" },
               { name: "Payments", path: "/payments" },
-              { name: "Settings", path: "/settings" },
-              { name: "Customer Portal", path: "/portal" },
+              { name: "Customer Portal", path: "/customer" },
               { name: "Login", path: "/login" },
-              { name: "Register", path: "/register" },
+              { name: "Sign Up", path: "/signup" },
             ].map((route) => (
               <Link
                 key={route.path}
                 href={route.path}
-                className="text-xs font-medium px-3 py-2 rounded-lg border bg-muted/40 hover:bg-accent hover:text-foreground text-center transition-colors truncate"
+                className="text-xs font-bold uppercase tracking-wide px-3 py-2.5 rounded-md border border-border bg-brightloop-bg/30 hover:bg-brightloop-coral hover:text-white hover:border-brightloop-coral text-brightloop-text text-center transition-all shadow-subtle truncate"
               >
                 {route.name}
               </Link>
@@ -189,8 +203,8 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t py-6 text-center text-xs text-muted-foreground bg-card">
-        <p>Brightloop Architecture Skeleton — Initialized for 8-Hour Hackathon Development</p>
+      <footer className="border-t border-border py-6 text-center text-xs font-semibold uppercase tracking-wider text-brightloop-sage bg-white">
+        <p>Brightloop Architecture Skeleton — Official Design System Applied</p>
       </footer>
     </div>
   );

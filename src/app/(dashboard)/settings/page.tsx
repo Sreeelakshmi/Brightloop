@@ -1,6 +1,15 @@
+import { requireRole } from "@/lib/auth/session";
 import { PlaceholderModule } from "@/components/shared/placeholder-module";
 
-export default function SettingsPage() {
+export const metadata = {
+  title: "Settings — Brightloop",
+  description: "System & Organization Settings for Brightloop",
+};
+
+export default async function SettingsPage() {
+  // Server-side RBAC guard: Admin only
+  await requireRole(["admin"]);
+
   return (
     <PlaceholderModule
       title="System & Organization Settings"

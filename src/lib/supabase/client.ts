@@ -1,21 +1,39 @@
+import { createBrowserClient as createSupabaseBrowserClient } from "@supabase/ssr";
+
+function normalizeSupabaseUrl(url: string) {
+  return url.trim().replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
+}
+
 /**
- * Supabase Client Placeholder
+ * Creates a browser-side Supabase client using `@supabase/ssr`.
  *
- * This client helper will be configured by Member 1 on the `feature/admin-backend` branch
- * once Supabase project credentials (NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
- * are provided in `.env.local`.
+ * Uses public credentials (URL and Publishable/Anon Key).
+ * Safe to be called from Client Components and hooks.
  */
-
 export function createBrowserClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    // Return null or placeholder during skeleton phase
-    return null;
+  if (!rawUrl) {
+    throw new Error(
+      "[Supabase Client] Missing environment variable: NEXT_PUBLIC_SUPABASE_URL. " +
+        "Please define it in your .env.local file."
+    );
   }
 
-  // To be initialized by Member 1:
-  // return createBrowserClient(supabaseUrl, supabaseAnonKey);
-  return null;
+  if (!supabaseAnonKey) {
+    throw new Error(
+      "[Supabase Client] Missing environment variable: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. " +
+        "Please define it in your .env.local file."
+    );
+  }
+
+  const supabaseUrl = normalizeSupabaseUrl(rawUrl);
+
+  return createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
 }
+
+// Alias for standard createClient naming
+export { createBrowserClient as createClient };

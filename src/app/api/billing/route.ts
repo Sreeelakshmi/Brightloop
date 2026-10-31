@@ -8,3 +8,4 @@ export async function GET() {
     message: "Brightloop Billing API placeholder route. Ready for Member 3 implementation.",
   });
 }
+
