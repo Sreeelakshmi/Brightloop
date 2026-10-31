@@ -16,22 +16,11 @@ export function createBrowserClient() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!rawUrl) {
-    throw new Error(
-      "[Supabase Client] Missing environment variable: NEXT_PUBLIC_SUPABASE_URL. " +
-        "Please define it in your .env.local file."
-    );
-  }
-
-  if (!supabaseAnonKey) {
-    throw new Error(
-      "[Supabase Client] Missing environment variable: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. " +
-        "Please define it in your .env.local file."
-    );
+  if (!rawUrl || !supabaseAnonKey) {
+    return null;
   }
 
   const supabaseUrl = normalizeSupabaseUrl(rawUrl);
-
   return createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
 }
 

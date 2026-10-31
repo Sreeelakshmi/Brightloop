@@ -55,34 +55,6 @@ export interface Profile {
   updatedAt?: string;
 }
 
-export interface TaxRule {
-  id: string;
-  name: string;
-  country?: string | null;
-  region?: string | null;
-  percentage: number;
-  isInclusive: boolean;
-  active: boolean;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface DiscountRule {
-  id: string;
-  code: string;
-  description?: string | null;
-  discountType: "percentage" | "fixed_amount";
-  discountValue: number;
-  currency?: string | null;
-  maxRedemptions?: number | null;
-  timesRedeemed: number;
-  startsAt?: string | null;
-  expiresAt?: string | null;
-  active: boolean;
-  createdAt: string;
-  updatedAt?: string;
-}
-
 export interface Customer {
   id: string;
   organizationId?: string | null;
@@ -187,3 +159,6 @@ export interface Payment {
 
 /* Subscription domain: products, variants, plans, quotations, subscriptions. */
 export * from "./subscription";
+
+/* Billing domain: invoices, taxes, discounts, payments, financial math. */
+export * from "./billing";

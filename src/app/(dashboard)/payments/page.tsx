@@ -1,20 +1,21 @@
-import { PlaceholderModule } from "@/components/shared/placeholder-module";
+import React from "react";
+import { getPayments } from "@/services/payments";
+import { getInvoices } from "@/services/invoices";
+import { PaymentsClient } from "@/components/billing/payments-client";
 
-export default function PaymentsPage() {
-  return (
-    <PlaceholderModule
-      title="Payments & Transactions"
-      description="Monitor payment gateways, incoming customer transactions, dispute handling, and payment reconciliation."
-      assignedMember="Member 3 — Billing & Payments"
-      branch="feature/billing-payments"
-      plannedFeatures={[
-        "Real-time payment transaction log and settlement status",
-        "Payment method management (Credit Cards, ACH, Wire, Wallets)",
-        "Dunning management and automated retry rules for failed payments",
-        "Refund processing and partial refund tracking",
-        "Payment reconciliation reports against generated invoices",
-      ]}
-    />
-  );
+export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Payments | Brightloop",
+  description: "Payment transaction ledger and settlement tracking.",
+};
+
+export default async function PaymentsPage() {
+  const [payments, invoices] = await Promise.all([
+    getPayments(),
+    getInvoices(),
+  ]);
+
+  return <PaymentsClient initialPayments={payments} invoices={invoices} />;
 }
 

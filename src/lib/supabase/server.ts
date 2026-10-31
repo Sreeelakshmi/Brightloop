@@ -1,4 +1,4 @@
-import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
+import { createServerClient as createSupabaseServerClient, type CookieOptions } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
@@ -15,50 +15,63 @@ function normalizeSupabaseUrl(url: string) {
 /**
  * Creates a server-side Supabase client with secure cookie-based session handling.
  * Compatible with Next.js App Router (Server Components, Server Actions, Route Handlers).
- *
- * Uses public credentials (URL and Publishable/Anon Key) and user cookies.
  */
 export function createServerClient() {
-  const cookieStore = cookies();
-
   const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!rawUrl) {
-    throw new Error(
-      "[Supabase Server] Missing environment variable: NEXT_PUBLIC_SUPABASE_URL. " +
-        "Please define it in your .env.local file."
-    );
-  }
-
-  if (!supabaseAnonKey) {
-    throw new Error(
-      "[Supabase Server] Missing environment variable: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. " +
-        "Please define it in your .env.local file."
-    );
+  if (!rawUrl || !supabaseAnonKey) {
+    return null as any;
   }
 
   const supabaseUrl = normalizeSupabaseUrl(rawUrl);
 
-  return createSupabaseServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
+  try {
+    const cookieStore = cookies();
+    return createSupabaseServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch {
+            // Safe to ignore in Server Components
+          }
+        },
+        remove(name: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value: "", ...options });
+          } catch {
+            // Safe to ignore in Server Components
+          }
+        },
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet: CookieToSet[]) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // Safe to ignore in Server Components
+          }
+        },
       },
-      setAll(cookiesToSet: CookieToSet[]) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        } catch {
-          // The `setAll` method was called from a Server Component.
-          // This can be safely ignored when middleware or Server Actions refresh sessions.
-        }
+    });
+  } catch {
+    // Fallback for non-request environments (e.g. scripts or build time)
+    return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
       },
-    },
-  });
+    });
+  }
 }
 
 /**
@@ -67,24 +80,13 @@ export function createServerClient() {
  * CAUTION: Bypasses Row Level Security (RLS).
  * MUST ONLY BE CALLED ON THE SERVER for admin backend operations,
  * background sync jobs, database migrations, or cron tasks.
- * NEVER expose this or call this from client-facing code.
  */
 export function createAdminClient() {
   const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!rawUrl) {
-    throw new Error(
-      "[Supabase Admin] Missing environment variable: NEXT_PUBLIC_SUPABASE_URL. " +
-        "Please define it in your .env.local file."
-    );
-  }
-
-  if (!serviceRoleKey) {
-    throw new Error(
-      "[Supabase Admin] Missing environment variable: SUPABASE_SERVICE_ROLE_KEY. " +
-        "Privileged admin operations require this server-only secret in .env.local."
-    );
+  if (!rawUrl || !serviceRoleKey) {
+    return null as any;
   }
 
   const supabaseUrl = normalizeSupabaseUrl(rawUrl);
@@ -95,6 +97,61 @@ export function createAdminClient() {
       persistSession: false,
     },
   });
+}
+
+export interface AuthenticatedUserContext {
+  id: string;
+  email?: string;
+  role: string;
+  name?: string;
+}
+
+/**
+ * Retrieves the currently authenticated user and verifies their database profile role.
+ */
+export async function getAuthenticatedUser(): Promise<AuthenticatedUserContext | null> {
+  const client = await createServerClient();
+  if (!client) return null;
+
+  try {
+    const {
+      data: { user },
+      error,
+    } = await client.auth.getUser();
+
+    if (error || !user) return null;
+
+    const { data: profile } = await client
+      .from("profiles")
+      .select("id, role, email, name, full_name")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    return {
+      id: user.id,
+      email: user.email,
+      role: profile?.role || "customer",
+      name: profile?.name || profile?.full_name || user.email,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Asserts that the caller has an administrative or staff role.
+ */
+export async function requireStaffOrAdmin(): Promise<AuthenticatedUserContext> {
+  const auth = await getAuthenticatedUser();
+  if (!auth) {
+    throw new Error("Unauthorized: A valid authenticated session is required.");
+  }
+
+  if (!["admin", "owner", "finance", "staff"].includes(auth.role)) {
+    throw new Error(`Forbidden: User role '${auth.role}' is not authorized to perform this operation.`);
+  }
+
+  return auth;
 }
 
 // Alias for standard createClient naming
