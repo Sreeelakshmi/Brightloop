@@ -1,0 +1,81 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { recordPayment } from "@/services/payments";
+import { updateInvoiceStatus } from "@/services/invoices";
+import { createTaxRule } from "@/services/taxes";
+import { createDiscount } from "@/services/discounts";
+import { runRecurringBilling } from "@/services/recurring";
+import {
+  recordPaymentSchema,
+  createTaxRuleSchema,
+  createDiscountSchema,
+  RecordPaymentInput,
+  CreateTaxRuleInput,
+  CreateDiscountInput,
+} from "@/lib/validations/billing";
+import { ExtendedInvoiceStatus } from "@/types";
+
+export async function recordPaymentAction(formData: RecordPaymentInput) {
+  try {
+    const validated = recordPaymentSchema.parse(formData);
+    const result = await recordPayment(validated);
+    revalidatePath("/invoices");
+    revalidatePath("/payments");
+    revalidatePath(`/invoices/${validated.invoiceId}`);
+    return { success: true, data: result };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to record payment" };
+  }
+}
+
+export async function updateInvoiceStatusAction(
+  invoiceId: string,
+  status: ExtendedInvoiceStatus
+) {
+  try {
+    const updated = await updateInvoiceStatus(invoiceId, status);
+    revalidatePath("/invoices");
+    revalidatePath(`/invoices/${invoiceId}`);
+    return { success: true, data: updated };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to update invoice status" };
+  }
+}
+
+export async function runRecurringBillingAction() {
+  try {
+    const result = await runRecurringBilling();
+    revalidatePath("/invoices");
+    revalidatePath("/payments");
+    revalidatePath("/dashboard");
+    return { success: true, data: result };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to run recurring billing" };
+  }
+}
+
+export async function createTaxRuleAction(input: CreateTaxRuleInput) {
+  try {
+    const validated = createTaxRuleSchema.parse(input);
+    const created = await createTaxRule(validated);
+    revalidatePath("/settings");
+    revalidatePath("/invoices");
+    return { success: true, data: created };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to create tax rule" };
+  }
+}
+
+export async function createDiscountAction(input: CreateDiscountInput) {
+  try {
+    const validated = createDiscountSchema.parse(input);
+    const created = await createDiscount(validated);
+    revalidatePath("/settings");
+    revalidatePath("/invoices");
+    return { success: true, data: created };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to create discount" };
+  }
+}
+

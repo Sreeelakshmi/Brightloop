@@ -124,3 +124,6 @@ export interface Payment {
   paymentMethod: string;
   createdAt: string;
 }
+
+
+export * from "./billing";

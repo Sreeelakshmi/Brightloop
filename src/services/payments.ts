@@ -1,0 +1,280 @@
+import { DetailedPayment, PaymentMethodType } from "@/types";
+import { rupeesToPaise, paiseToRupees, formatINR } from "@/lib/billing/math";
+import { RecordPaymentInput } from "@/lib/validations/billing";
+import { getInvoiceById, applyPaymentToInvoice } from "./invoices";
+
+// 12 Deterministic seed payments matching the seed data
+let paymentsStore: DetailedPayment[] = [
+  {
+    id: "44444444-4444-4000-8000-000000000001",
+    invoiceId: "33333333-3333-4000-8000-000000000001",
+    customerId: "a0000000-0000-4000-8000-000000000001",
+    amount: 5898.82,
+    amountPaise: 589882,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "card",
+    paymentMethodType: "card",
+    paymentDate: "2026-10-02T14:30:00Z",
+    transactionReference: "TXN_CARD_981245",
+    notes: "Full settlement via Visa card ending in 4242",
+    createdAt: "2026-10-02T14:30:00Z",
+  },
+  {
+    id: "44444444-4444-4000-8000-000000000002",
+    invoiceId: "33333333-3333-4000-8000-000000000002",
+    customerId: "a0000000-0000-4000-8000-000000000002",
+    amount: 2831.06,
+    amountPaise: 283106,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "upi",
+    paymentMethodType: "upi",
+    paymentDate: "2026-10-02T10:15:00Z",
+    transactionReference: "UPI_RR_8823412",
+    notes: "UPI payment via Google Pay",
+    createdAt: "2026-10-02T10:15:00Z",
+  },
+  {
+    id: "44444444-4444-4000-8000-000000000003",
+    invoiceId: "33333333-3333-4000-8000-000000000003",
+    customerId: "a0000000-0000-4000-8000-000000000003",
+    amount: 25074.0,
+    amountPaise: 2507400,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "bank_transfer",
+    paymentMethodType: "bank_transfer",
+    paymentDate: "2026-09-16T11:00:00Z",
+    transactionReference: "NEFT_HDFC_009912",
+    notes: "Corporate NEFT transfer verified",
+    createdAt: "2026-09-16T11:00:00Z",
+  },
+  {
+    id: "44444444-4444-4000-8000-000000000004",
+    invoiceId: "33333333-3333-4000-8000-000000000004",
+    customerId: "a0000000-0000-4000-8000-000000000004",
+    amount: 5000.0,
+    amountPaise: 500000,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "upi",
+    paymentMethodType: "upi",
+    paymentDate: "2026-10-21T09:45:00Z",
+    transactionReference: "UPI_RR_991204",
+    notes: "First installment partial payment",
+    createdAt: "2026-10-21T09:45:00Z",
+  },
+  {
+    id: "44444444-4444-4000-8000-000000000005",
+    invoiceId: "33333333-3333-4000-8000-000000000005",
+    customerId: "a0000000-0000-4000-8000-000000000005",
+    amount: 4440.0,
+    amountPaise: 444000,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "net_banking",
+    paymentMethodType: "net_banking",
+    paymentDate: "2026-10-26T16:20:00Z",
+    transactionReference: "NETB_ICICI_77812",
+    notes: "Initial tranche recorded by finance staff",
+    createdAt: "2026-10-26T16:20:00Z",
+  },
+  {
+    id: "44444444-4444-4000-8000-000000000006",
+    invoiceId: "33333333-3333-4000-8000-000000000007",
+    customerId: "a0000000-0000-4000-8000-000000000007",
+    amount: 7700.0,
+    amountPaise: 770000,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "manual",
+    paymentMethodType: "manual",
+    paymentDate: "2026-09-12T12:00:00Z",
+    transactionReference: "MANUAL_RECEIPT_104",
+    notes: "Cheque deposit acknowledged by finance team",
+    createdAt: "2026-09-12T12:00:00Z",
+  },
+  {
+    id: "44444444-4444-4000-8000-000000000007",
+    invoiceId: "33333333-3333-4000-8000-000000000010",
+    customerId: "a0000000-0000-4000-8000-000000000010",
+    amount: 2358.82,
+    amountPaise: 235882,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "card",
+    paymentMethodType: "card",
+    paymentDate: "2026-10-12T18:00:00Z",
+    transactionReference: "TXN_CARD_102938",
+    notes: "Mastercard transaction auth verified",
+    createdAt: "2026-10-12T18:00:00Z",
+  },
+  {
+    id: "44444444-4444-4000-8000-000000000008",
+    invoiceId: "33333333-3333-4000-8000-000000000011",
+    customerId: "a0000000-0000-4000-8000-000000000001",
+    amount: 5898.82,
+    amountPaise: 589882,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "card",
+    paymentMethodType: "card",
+    paymentDate: "2026-09-02T14:10:00Z",
+    transactionReference: "TXN_CARD_882910",
+    notes: "Recurring billing card charge",
+    createdAt: "2026-09-02T14:10:00Z",
+  },
+  {
+    id: "44444444-4444-4000-8000-000000000009",
+    invoiceId: "33333333-3333-4000-8000-000000000013",
+    customerId: "a0000000-0000-4000-8000-000000000003",
+    amount: 10618.94,
+    amountPaise: 1061894,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "bank_transfer",
+    paymentMethodType: "bank_transfer",
+    paymentDate: "2026-10-19T13:45:00Z",
+    transactionReference: "RTGS_KOTAK_5510",
+    notes: "RTGS settlement verified in corporate account",
+    createdAt: "2026-10-19T13:45:00Z",
+  },
+  {
+    id: "44444444-4444-4000-8000-000000000010",
+    invoiceId: "33333333-3333-4000-8000-000000000015",
+    customerId: "a0000000-0000-4000-8000-000000000005",
+    amount: 1770.0,
+    amountPaise: 177000,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "upi",
+    paymentMethodType: "upi",
+    paymentDate: "2026-10-10T11:25:00Z",
+    transactionReference: "UPI_BHIM_441029",
+    notes: "BHIM UPI payment received",
+    createdAt: "2026-10-10T11:25:00Z",
+  },
+  {
+    id: "44444444-4444-4000-8000-000000000011",
+    invoiceId: "33333333-3333-4000-8000-000000000017",
+    customerId: "a0000000-0000-4000-8000-000000000007",
+    amount: 4720.0,
+    amountPaise: 472000,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "net_banking",
+    paymentMethodType: "net_banking",
+    paymentDate: "2026-10-16T15:30:00Z",
+    transactionReference: "NETB_AXIS_99182",
+    notes: "Axis Bank Net Banking confirmation",
+    createdAt: "2026-10-16T15:30:00Z",
+  },
+  {
+    id: "44444444-4444-4000-8000-000000000012",
+    invoiceId: "33333333-3333-4000-8000-000000000019",
+    customerId: "a0000000-0000-4000-8000-000000000009",
+    amount: 4718.82,
+    amountPaise: 471882,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: "card",
+    paymentMethodType: "card",
+    paymentDate: "2026-10-22T08:00:00Z",
+    transactionReference: "TXN_CARD_771920",
+    notes: "Visa auto-debit confirmation",
+    createdAt: "2026-10-22T08:00:00Z",
+  },
+];
+
+export interface PaymentFilters {
+  invoiceId?: string;
+  customerId?: string;
+  paymentMethod?: string;
+  status?: string;
+}
+
+export async function getPayments(filters?: PaymentFilters): Promise<DetailedPayment[]> {
+  let results = [...paymentsStore];
+
+  if (filters?.invoiceId) {
+    results = results.filter((p) => p.invoiceId === filters.invoiceId);
+  }
+
+  if (filters?.customerId) {
+    results = results.filter((p) => p.customerId === filters.customerId);
+  }
+
+  if (filters?.paymentMethod && filters.paymentMethod !== "all") {
+    results = results.filter((p) => p.paymentMethod === filters.paymentMethod);
+  }
+
+  if (filters?.status && filters.status !== "all") {
+    results = results.filter((p) => p.status === filters.status);
+  }
+
+  // Sort newest first
+  return results.sort(
+    (a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+  );
+}
+
+export async function recordPayment(input: RecordPaymentInput): Promise<{
+  payment: DetailedPayment;
+  updatedInvoice: any;
+}> {
+  const invoice = await getInvoiceById(input.invoiceId);
+  if (!invoice) {
+    throw new Error(`Invoice with ID ${input.invoiceId} does not exist.`);
+  }
+
+  if (invoice.extendedStatus === "cancelled") {
+    throw new Error("Cannot record payment against a cancelled invoice.");
+  }
+
+  if (invoice.extendedStatus === "draft") {
+    throw new Error("Cannot record payment against an unconfirmed draft invoice.");
+  }
+
+  const paymentPaise = rupeesToPaise(input.amountRupees);
+  if (paymentPaise <= 0) {
+    throw new Error("Payment amount must be greater than zero.");
+  }
+
+  if (paymentPaise > invoice.amountDuePaise) {
+    throw new Error(
+      `Overpayment rejected! Payment of ${formatINR(paymentPaise)} exceeds outstanding balance of ${formatINR(
+        invoice.amountDuePaise
+      )}.`
+    );
+  }
+
+  // Atomically update invoice
+  const updatedInvoice = await applyPaymentToInvoice(invoice.id, paymentPaise);
+
+  const newPayment: DetailedPayment = {
+    id: crypto.randomUUID(),
+    invoiceId: invoice.id,
+    customerId: input.customerId || invoice.customerId,
+    amount: input.amountRupees,
+    amountPaise: paymentPaise,
+    currency: "INR",
+    status: "succeeded",
+    paymentMethod: input.paymentMethod,
+    paymentMethodType: input.paymentMethod as PaymentMethodType,
+    paymentDate: new Date().toISOString(),
+    transactionReference:
+      input.transactionReference ||
+      `TXN_${input.paymentMethod.toUpperCase()}_${Math.floor(100000 + Math.random() * 900000)}`,
+    notes: input.notes,
+    createdAt: new Date().toISOString(),
+  };
+
+  paymentsStore.unshift(newPayment);
+
+  return {
+    payment: { ...newPayment },
+    updatedInvoice,
+  };
+}
+
