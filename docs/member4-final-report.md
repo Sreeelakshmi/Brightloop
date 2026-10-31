@@ -114,3 +114,4 @@ Brightloop currently operates in mock mode for development and testing:
 1. **Member 3 PDF Endpoint**: The "Download PDF" button in `InvoiceSheet.tsx` currently triggers an informative alert dialog; it requires Member 3's PDF renderer endpoint.
 2. **Member 2 Subscription State Transitions**: Renew, Pause, and Close actions show confirmation dialogs and log TODO messages; awaiting Member 2's mutation APIs.
 3. **Push Notifications / Webhooks**: Real-time invoice payment status updates will benefit from Supabase Realtime subscriptions in future iterations.
+
