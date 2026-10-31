@@ -97,6 +97,11 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{
   }
 
   const newPaymentId = crypto.randomUUID();
+  // Validate customer authorization / ownership
+  if (input.customerId && invoice.customerId !== input.customerId) {
+    throw new Error("Unauthorized: Customer ID mismatch for this invoice.");
+  }
+
   const txRef =
     input.transactionReference ||
     `TXN_${input.paymentMethod.toUpperCase()}_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
@@ -106,63 +111,25 @@ export async function recordPayment(input: RecordPaymentInput): Promise<{
     throw new Error("Database client is not available. Cannot persist payment.");
   }
 
-  let paymentRecordId = newPaymentId;
+  // Execute atomic record_invoice_payment RPC (Row lock FOR UPDATE and atomic ledger entry)
+  const { data: rpcData, error: rpcError } = await supabase.rpc("record_invoice_payment", {
+    p_invoice_id: invoice.id,
+    p_customer_id: input.customerId || invoice.customerId,
+    p_amount: input.amountRupees,
+    p_payment_method: input.paymentMethod,
+    p_transaction_reference: txRef,
+    p_notes: input.notes || null,
+  });
 
-  // 1. Attempt database RPC for atomic row-locking execution if available
-  let rpcHandled = false;
-  try {
-    const { data: rpcData, error: rpcError } = await supabase.rpc("record_invoice_payment", {
-      p_invoice_id: invoice.id,
-      p_customer_id: input.customerId || invoice.customerId,
-      p_amount: input.amountRupees,
-      p_payment_method: input.paymentMethod,
-      p_transaction_reference: txRef,
-      p_notes: input.notes || null,
-    });
-
-    if (!rpcError && rpcData?.payment_id) {
-      paymentRecordId = rpcData.payment_id;
-      rpcHandled = true;
-    }
-  } catch {
-    // RPC not yet deployed in remote database
+  if (rpcError) {
+    throw new Error(`Failed to record payment atomically: ${rpcError.message}`);
   }
 
-  if (!rpcHandled) {
-    // Execute direct table writes matching live database schema
-    const { error: insertErr } = await supabase.from("payments").insert({
-      id: newPaymentId,
-      invoice_id: invoice.id,
-      customer_id: input.customerId || invoice.customerId,
-      amount: input.amountRupees,
-      currency: "INR",
-      payment_method: input.paymentMethod,
-      status: "succeeded",
-      transaction_reference: txRef,
-    });
-
-    if (insertErr) {
-      throw new Error(`Failed to record payment in database: ${insertErr.message}`);
-    }
-
-    const newPaidPaise = invoice.amountPaidPaise + paymentPaise;
-    const newDuePaise = Math.max(0, invoice.totalAmountPaise - newPaidPaise);
-    const newStatus = newDuePaise === 0 ? "paid" : invoice.status;
-
-    const { error: updateErr } = await supabase
-      .from("invoices")
-      .update({
-        amount_paid: paiseToRupees(newPaidPaise),
-        amount_due: paiseToRupees(newDuePaise),
-        status: newStatus,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", invoice.id);
-
-    if (updateErr) {
-      throw new Error(`Failed to update invoice balance in database: ${updateErr.message}`);
-    }
+  if (!rpcData || !rpcData.payment_id) {
+    throw new Error("Payment RPC returned invalid response: missing payment_id.");
   }
+
+  const paymentRecordId = rpcData.payment_id;
 
   // Reload the updated invoice directly from the database
   const updatedInvoice = await getInvoiceById(invoice.id);

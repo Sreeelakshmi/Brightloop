@@ -50,9 +50,10 @@ export async function runRecurringBilling(options?: {
       status,
       current_period_start,
       current_period_end,
+      next_billing_date,
       plan_id,
       profiles:customer_id (full_name, email),
-      plans:plan_id (name, price, billing_period)
+      plans:plan_id (name, amount, interval, currency, active)
     `)
     .eq("status", "active");
 
@@ -74,12 +75,12 @@ export async function runRecurringBilling(options?: {
     const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
     const plan = Array.isArray(s.plans) ? s.plans[0] : s.plans;
 
-    const unitPricePaise = Math.round(Number(plan?.price ?? 0) * 100);
-    const planPeriod = plan?.billing_period || "monthly";
+    const unitPricePaise = Math.round(Number(plan?.amount ?? plan?.price ?? 0) * 100);
+    const planPeriod = plan?.interval || plan?.billing_period || "month";
     const billingInterval: BillingInterval | BillingFrequency =
-      planPeriod === "daily" ? "day" :
-      planPeriod === "weekly" ? "week" :
-      planPeriod === "yearly" ? "year" : "month";
+      planPeriod === "day" || planPeriod === "daily" ? "day" :
+      planPeriod === "week" || planPeriod === "weekly" ? "week" :
+      planPeriod === "year" || planPeriod === "yearly" ? "year" : "month";
 
     const nextBillingDate = s.next_billing_date || s.current_period_end || new Date().toISOString();
 
@@ -198,66 +199,39 @@ export async function runRecurringBilling(options?: {
         },
       ];
 
-      // 1. Attempt Atomic PostgreSQL RPC if deployed
+      // 1. Execute Atomic PostgreSQL RPC (Guarantees atomic invoice creation and date advancement)
       let generatedInvoice: DetailedInvoice | null = null;
-      try {
-        const { data: rpcData, error: rpcError } = await client.rpc(
-          "generate_subscription_recurring_invoice",
-          {
-            p_subscription_id: sub.subscriptionId,
-            p_period_start: periodStart,
-            p_period_end: periodEnd,
-            p_due_date: dueDateObj.toISOString(),
-            p_advanced_next_billing_date: advancedDate,
-            p_subtotal: paiseToRupees(totals.subtotalPaise),
-            p_discount_total: paiseToRupees(totals.discountTotalPaise),
-            p_tax_total: paiseToRupees(totals.taxTotalPaise),
-            p_total_amount: paiseToRupees(totals.totalPaise),
-            p_items: dbItems,
-            p_notes: `Automated recurring billing for ${sub.planName} (${sub.billingInterval} cycle)`,
-          }
-        );
+      const { data: rpcData, error: rpcError } = await client.rpc(
+        "generate_subscription_recurring_invoice",
+        {
+          p_subscription_id: sub.subscriptionId,
+          p_billing_period_start: periodStart,
+          p_billing_period_end: periodEnd,
+          p_due_date: dueDateObj.toISOString(),
+          p_advanced_next_billing_date: advancedDate,
+          p_subtotal: paiseToRupees(totals.subtotalPaise),
+          p_discount_total: paiseToRupees(totals.discountTotalPaise),
+          p_tax_total: paiseToRupees(totals.taxTotalPaise),
+          p_items: dbItems,
+          p_notes: `Automated recurring billing for ${sub.planName} (${sub.billingInterval} cycle)`,
+        }
+      );
 
-        if (!rpcError && rpcData?.invoice_id) {
-          generatedInvoice = await getInvoiceById(rpcData.invoice_id);
-        } else if (rpcError?.message?.includes("DUPLICATE_PERIOD") || rpcError?.message?.includes("already exists")) {
+      if (rpcError) {
+        if (rpcError.message?.includes("DUPLICATE_PERIOD") || rpcError.message?.includes("already exists")) {
           result.skippedDuplicateCount++;
           continue;
         }
-      } catch {
-        // Fallback to application-level creation
+        // Strict atomicity: do NOT fall back to separate invoice creation or date advancement
+        result.errors.push({
+          subscriptionId: sub.subscriptionId,
+          error: `Atomic recurring invoice creation failed: ${rpcError.message}`,
+        });
+        continue;
       }
 
-      if (!generatedInvoice) {
-        generatedInvoice = await createInvoice({
-          customerId: sub.customerId,
-          customerName: sub.customerName,
-          customerEmail: sub.customerEmail,
-          subscriptionId: sub.subscriptionId,
-          dueDate: dueDateObj.toISOString(),
-          periodStart,
-          periodEnd,
-          notes: `Automated recurring billing for ${sub.planName} (${sub.billingInterval} cycle)`,
-          items: [
-            {
-              description: `${sub.planName} (${sub.billingInterval} cycle)`,
-              quantity: sub.quantity,
-              unitPricePaise: sub.unitPricePaise,
-              taxRatePercent: 18,
-              discountCode: sub.discountCode,
-            },
-          ],
-        });
-
-        // Advance date ONLY after successful invoice creation
-        await client
-          .from("subscriptions")
-          .update({
-            current_period_start: periodStart,
-            current_period_end: periodEnd,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", sub.subscriptionId);
+      if (rpcData?.invoice_id) {
+        generatedInvoice = await getInvoiceById(rpcData.invoice_id);
       }
 
       if (discountCodeToIncrement) {
@@ -296,9 +270,10 @@ export async function getActiveSubscriptions(): Promise<SubscriptionBillingContr
       status,
       current_period_start,
       current_period_end,
+      next_billing_date,
       plan_id,
       profiles:customer_id (full_name, email),
-      plans:plan_id (name, price, billing_period)
+      plans:plan_id (name, amount, interval, currency, active)
     `)
     .eq("status", "active");
 
@@ -318,12 +293,12 @@ export async function getActiveSubscriptions(): Promise<SubscriptionBillingContr
     const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
     const plan = Array.isArray(s.plans) ? s.plans[0] : s.plans;
 
-    const unitPricePaise = Math.round(Number(plan?.price ?? 0) * 100);
-    const planPeriod = plan?.billing_period || "monthly";
+    const unitPricePaise = Math.round(Number(plan?.amount ?? plan?.price ?? 0) * 100);
+    const planPeriod = plan?.interval || plan?.billing_period || "month";
     const billingInterval: BillingInterval | BillingFrequency =
-      planPeriod === "daily" ? "day" :
-      planPeriod === "weekly" ? "week" :
-      planPeriod === "yearly" ? "year" : "month";
+      planPeriod === "day" || planPeriod === "daily" ? "day" :
+      planPeriod === "week" || planPeriod === "weekly" ? "week" :
+      planPeriod === "year" || planPeriod === "yearly" ? "year" : "month";
 
     const nextBillingDate = s.next_billing_date || s.current_period_end || new Date().toISOString();
 

@@ -16,8 +16,8 @@ function mapDbDiscount(row: any): Discount {
     value,
     minPurchaseAmount: row.min_purchase_amount ? Number(row.min_purchase_amount) : undefined,
     minQuantity: row.min_quantity ? Number(row.min_quantity) : undefined,
-    maxUsage: row.max_uses ?? row.max_usage ?? undefined,
-    usedCount: Number(row.current_uses ?? row.used_count ?? 0),
+    maxUsage: row.max_redemptions ?? row.max_usage ?? undefined,
+    usedCount: Number(row.times_redeemed ?? row.used_count ?? 0),
     productId: row.product_id || (Array.isArray(row.applicable_product_ids) ? row.applicable_product_ids[0] : undefined),
     subscriptionId: row.subscription_id || (Array.isArray(row.applicable_plan_ids) ? row.applicable_plan_ids[0] : undefined),
     startDate: row.starts_at || row.start_date || undefined,
@@ -99,6 +99,8 @@ export async function createDiscount(input: CreateDiscountInput): Promise<Discou
       discount_type: input.type,
       discount_value: input.value,
       active: true,
+      times_redeemed: 0,
+      max_redemptions: input.maxUsage || null,
       starts_at: input.startDate || null,
       expires_at: input.endDate || null,
       created_at: new Date().toISOString(),
@@ -196,29 +198,36 @@ export async function incrementDiscountUsage(code: string): Promise<boolean> {
     // Fallback to table update if RPC not present
   }
 
-  const { data: current } = await supabase
+  const { data: current, error: fetchErr } = await supabase
     .from("discount_rules")
-    .select("id, current_uses, max_uses, used_count, max_usage")
+    .select("id, times_redeemed, max_redemptions")
     .eq("code", normalizedCode)
     .maybeSingle();
 
-  if (!current) return false;
-
-  const maxUsage = current.max_usage ?? current.max_uses;
-  const currentCount = current.used_count ?? current.current_uses ?? 0;
-
-  if (maxUsage !== null && maxUsage !== undefined && currentCount >= maxUsage) {
-    throw new Error(`Discount coupon ${normalizedCode} has reached its maximum usage limit.`);
+  if (fetchErr) {
+    throw new Error(`Failed to query discount rule ${normalizedCode}: ${fetchErr.message}`);
   }
 
-  const { error } = await supabase
+  if (!current) return false;
+
+  const maxUsage = current.max_redemptions;
+  const currentCount = Number(current.times_redeemed ?? 0);
+
+  if (maxUsage !== null && maxUsage !== undefined && currentCount >= maxUsage) {
+    throw new Error(`Discount coupon ${normalizedCode} has reached its maximum usage limit (${maxUsage}).`);
+  }
+
+  const { error: updateErr } = await supabase
     .from("discount_rules")
     .update({
-      current_uses: currentCount + 1,
-      used_count: currentCount + 1,
+      times_redeemed: currentCount + 1,
       updated_at: new Date().toISOString(),
     })
     .eq("id", current.id);
 
-  return !error;
+  if (updateErr) {
+    throw new Error(`Failed to update discount usage count: ${updateErr.message}`);
+  }
+
+  return true;
 }
